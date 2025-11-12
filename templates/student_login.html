@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Login - Mess Management</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+        
+        body {
+            /* Softer teal background for improved readability */
+            background: linear-gradient(135deg, #ccfbf1 0%, #99f6e4 50%, #2dd4bf 100%);
+            background-size: 400% 400%;
+            animation: gradientShift 15s ease infinite;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        .login-card {
+            max-width: 450px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            overflow: hidden;
+            animation: slideUp 0.5s ease-out;
+        }
+        
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .login-header {
+            background: linear-gradient(135deg, #14b8a6 0%, #06b6d4 100%);
+            color: white;
+            padding: 2.5rem;
+            text-align: center;
+        }
+        
+        .login-header .icon {
+            width: 80px;
+            height: 80px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+        }
+        
+        .form-control {
+            border-radius: 12px;
+            padding: 0.75rem 1rem;
+            border: 2px solid #e2e8f0;
+        }
+        
+        .form-control:focus {
+            border-color: #14b8a6;
+            box-shadow: 0 0 0 0.2rem rgba(20, 184, 166, 0.25);
+        }
+        
+        .btn-student {
+            background: linear-gradient(135deg, #14b8a6, #06b6d4);
+            border: none;
+            border-radius: 12px;
+            padding: 0.75rem;
+            font-weight: 600;
+            color: white;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-student:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(20, 184, 166, 0.3);
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-12">
+                <div class="login-card mx-auto">
+                    <div class="login-header">
+                        <div class="icon">
+                            <i class="fas fa-user-graduate fa-3x"></i>
+                        </div>
+                        <h2 class="mb-1" style="font-family: 'Poppins', sans-serif;">Student Portal</h2>
+                        <p class="mb-0 opacity-90">Login to access your account</p>
+                    </div>
+                    
+                    <div class="p-4">
+                        {% if force_login and session.get('student_name') %}
+                        <div class="alert alert-info d-flex justify-content-between align-items-center" role="alert" style="border-radius:14px;">
+                            <div>
+                                <i class="fas fa-user-check me-2"></i>
+                                You're currently signed in as <strong>{{ session.get('student_name') }}</strong>.
+                            </div>
+                            <div class="d-flex gap-2">
+                                <a href="{{ url_for('student_dashboard') }}" class="btn btn-sm btn-primary"><i class="fas fa-arrow-right me-1"></i>Continue</a>
+                                <a href="{{ url_for('student_logout') }}" class="btn btn-sm btn-outline-secondary"><i class="fas fa-exchange-alt me-1"></i>Switch Account</a>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% with messages = get_flashed_messages() %}
+                        {% if messages %}
+                        {% for message in messages %}
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                        {% endfor %}
+                        {% endif %}
+                        {% endwith %}
+                        
+                        <form method="POST">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            
+                            <div class="mb-3">
+                                <label for="roll_no" class="form-label fw-semibold">
+                                    <i class="fas fa-id-card me-2 text-teal-500"></i>Roll Number
+                                </label>
+                                <input type="text" class="form-control" id="roll_no" name="roll_no" 
+                                       placeholder="Enter your roll number" required autofocus>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <label for="password" class="form-label fw-semibold">
+                                    <i class="fas fa-lock me-2 text-teal-500"></i>Password
+                                </label>
+                                <input type="password" class="form-control" id="password" name="password" 
+                                       placeholder="Enter your password" required>
+                            </div>
+                            
+                            <div class="d-grid mb-3">
+                                <button type="submit" class="btn btn-student">
+                                    <i class="fas fa-sign-in-alt me-2"></i>Login
+                                </button>
+                            </div>
+                            
+                            
+                        </form>
+                        <div class="d-flex justify-content-between mt-3 flex-wrap gap-2">
+                           <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">
+                                    <i class="fas fa-arrow-left me-1"></i>Back to Home
+                                </a>
+                            <a href="{{ url_for('login') }}" class="btn btn-secondary">
+                                <i class="fas fa-user-shield me-1"></i>Admin Login
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

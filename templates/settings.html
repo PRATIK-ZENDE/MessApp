@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header text-white" style="background: linear-gradient(45deg, var(--indigo-400), var(--indigo-500));">
+                    <h2 class="mb-0"><i class="fas fa-cog me-2"></i>Settings</h2>
+                </div>
+                <div class="card-body" style="background: linear-gradient(135deg, var(--indigo-50), var(--slate-50));">
+                    <form method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        
+                        <div class="mb-4">
+                            <h5 class="fw-bold mb-3">Billing Configuration</h5>
+                            
+                            <div class="mb-3">
+                                <label for="daily_meal_rate" class="form-label">
+                                    Daily Meal Rate (₹)
+                                    <small class="text-muted">- Rate for 2 meals per day (Lunch + Dinner)</small>
+                                </label>
+                                <input type="number" 
+                                       class="form-control" 
+                                       id="daily_meal_rate" 
+                                       name="daily_meal_rate" 
+                                       value="{{ daily_meal_rate }}" 
+                                       step="0.01" 
+                                       min="0" 
+                                       required>
+                                <div class="form-text">
+                                    Each meal will be charged at half of this rate. 
+                                    <br>
+                                    <strong>Current: ₹{{ daily_meal_rate }}</strong> per day → 
+                                    <strong>₹{{ "%.2f"|format(daily_meal_rate|float / 2) }}</strong> per meal
+                                </div>
+                            </div>
+
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <strong>How it works:</strong>
+                                <ul class="mb-0 mt-2">
+                                    <li>1 Lunch = ₹{{ "%.2f"|format(daily_meal_rate|float / 2) }}</li>
+                                    <li>1 Dinner = ₹{{ "%.2f"|format(daily_meal_rate|float / 2) }}</li>
+                                    <li>Both meals = ₹{{ daily_meal_rate }}</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <div class="mb-4">
+                            <h5 class="fw-bold mb-3">
+                                <i class="fas fa-qrcode me-2"></i>UPI Payment Configuration
+                            </h5>
+                            
+                            <div class="mb-3">
+                                <label for="upi_id" class="form-label">
+                                    UPI ID
+                                    <small class="text-muted">- Your merchant UPI address</small>
+                                </label>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="upi_id" 
+                                       name="upi_id" 
+                                       value="{{ upi_id }}" 
+                                       placeholder="e.g., mess@paytm or 9876543210@ybl"
+                                       required>
+                                <div class="form-text">
+                                    This is the UPI address where students will send payments.
+                                    <br>
+                                    <strong>Current: {{ upi_id or 'Not configured' }}</strong>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="upi_name" class="form-label">
+                                    Merchant Name
+                                    <small class="text-muted">- Name shown in payment apps (Google Pay, PhonePe, etc.)</small>
+                                </label>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="upi_name" 
+                                       name="upi_name" 
+                                       value="{{ upi_name }}" 
+                                       placeholder="e.g., XYZ College Mess"
+                                       required>
+                                <div class="form-text">
+                                    Students will see this name when making UPI payments.
+                                    <br>
+                                    <strong>Current: {{ upi_name or 'Not configured' }}</strong>
+                                </div>
+                            </div>
+
+                            <div class="alert alert-warning">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                <strong>Important:</strong>
+                                <ul class="mb-0 mt-2">
+                                    <li>Make sure your UPI ID is active and can receive payments</li>
+                                    <li>Test the payment flow before announcing to students</li>
+                                    <li>Merchant name will appear in Google Pay, PhonePe, and other UPI apps</li>
+                                    <li>Keep these details accurate for smooth transactions</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-start">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Save Settings
+                            </button>
+                            <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Info Card -->
+    <div class="row mt-4">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header" style="background: linear-gradient(45deg, var(--teal-400), var(--teal-500)); color: white;">
+                    <h5 class="mb-0"><i class="fas fa-lightbulb me-2"></i>Tips</h5>
+                </div>
+                <div class="card-body" style="background-color: var(--teal-50);">
+                    <ul class="mb-0">
+                        <li>Changes will apply to all <strong>new bills</strong> generated after saving</li>
+                        <li>Existing bills will <strong>not</strong> be affected</li>
+                        <li>You can change the rate anytime based on your mess costs</li>
+                        <li>Consider food costs, utilities when setting the rate</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

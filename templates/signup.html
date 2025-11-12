@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mess Signup – Create Your Mess</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+  <style>
+  * { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+  h1, h2, h3 { font-family: 'Poppins', 'Inter', sans-serif; }
+    body {
+      background: linear-gradient(135deg,#ccfbf1 0%, #99f6e4 40%, #2dd4bf 100%);
+      background-size: 400% 400%;
+      animation: gradientShift 14s ease infinite;
+      min-height: 100vh;
+      display:flex; align-items:center; justify-content:center; padding:30px;
+    }
+    @keyframes gradientShift { 0%{background-position:0% 50%;} 50%{background-position:100% 50%;} 100%{background-position:0% 50%;} }
+    .signup-wrapper { max-width: 1000px; width:100%; }
+    .glass-card {
+      background: rgba(255,255,255,0.92);
+      backdrop-filter: blur(22px);
+      border-radius: 28px;
+      box-shadow: 0 25px 55px -15px rgba(0,0,0,0.35);
+      overflow:hidden;
+      animation: fadeSlide .6s ease;
+    }
+    @keyframes fadeSlide { from {opacity:0; transform:translateY(35px);} to {opacity:1; transform:translateY(0);} }
+    .hero-pane { background: linear-gradient(135deg,#14b8a6,#06b6d4); color:#fff; padding:3rem 2.2rem; position:relative; }
+    .hero-pane:before { content:""; position:absolute; inset:0; background: radial-gradient(circle at 30% 20%, rgba(255,255,255,0.25), transparent 70%); }
+    .hero-icon { width:88px; height:88px; background:rgba(255,255,255,0.18); border-radius:24px; display:flex; align-items:center; justify-content:center; margin-bottom:1.4rem; }
+    .hero-pane h1 { font-family:'Poppins',sans-serif; font-weight:700; letter-spacing:.5px; }
+    .tagline { opacity:.92; font-size:.95rem; }
+    form { padding:2.2rem; }
+    .section-title { font-size:.85rem; text-transform:uppercase; font-weight:600; letter-spacing:.7px; color:#0f766e; margin-bottom:.75rem; display:flex; align-items:center; gap:.5rem; }
+    .section-title i { font-size:.9rem; }
+    .form-control { border-radius:14px; padding:.75rem 1rem; border:2px solid #e2e8f0; font-weight:500; }
+    .form-control:focus { border-color:#14b8a6; box-shadow:0 0 0 3px rgba(20,184,166,0.25); }
+    .info-box { background:linear-gradient(135deg,#f0fdfa,#ccfbf1); border:1px solid #a5f3fc; border-radius:16px; padding:1rem 1.1rem; font-size:.85rem; }
+    .btn-primary { background:linear-gradient(135deg,#14b8a6,#06b6d4); border:none; font-weight:600; letter-spacing:.4px; padding:.85rem 1.2rem; border-radius:14px; box-shadow:0 10px 25px -5px rgba(6,182,212,0.45); }
+    .btn-primary:hover { transform:translateY(-2px); box-shadow:0 16px 35px -8px rgba(6,182,212,0.55); }
+    .btn-outline-secondary { border-radius:14px; }
+    .divider { height:1px; background:linear-gradient(90deg,#0d9488,#5eead4,#0d9488); opacity:.3; margin:1.5rem 0; }
+    .flash-area .alert { border-radius:14px; }
+    .footer-links { font-size:.75rem; opacity:.7; margin-top:1.5rem; }
+    .pill { display:inline-block; background:#0d9488; color:#fff; font-size:.65rem; padding:.35rem .6rem; border-radius:999px; letter-spacing:.5px; margin-left:.5rem; }
+    @media (max-width: 992px){ .hero-pane { padding:2.4rem 1.8rem; } form { padding:1.7rem 1.4rem; } }
+  </style>
+</head>
+<body>
+  <div class="signup-wrapper">
+    <div class="glass-card row g-0">
+      <div class="col-lg-5 hero-pane d-flex flex-column justify-content-center">
+        <div class="hero-icon"><i class="fas fa-utensils fa-3x"></i></div>
+        <h1 class="mb-2">Create Your Mess</h1>
+        <p class="tagline mb-3">Set up billing, attendance & UPI payments in minutes.</p>
+        <ul class="small" style="list-style:none; padding-left:0; margin:0; line-height:1.4;">
+          <li><i class="fas fa-check-circle me-2"></i>Unlimited students</li>
+          <li><i class="fas fa-check-circle me-2"></i>QR attendance tracking</li>
+          <li><i class="fas fa-check-circle me-2"></i>Bill + payment verification</li>
+          <li><i class="fas fa-check-circle me-2"></i>UPI deep link & QR pay</li>
+        </ul>
+        <div class="mt-4 info-box" style="color: #000;">
+          <strong>Tip:</strong> You can edit these details later in Settings. UPI info is optional now.
+        </div>
+      </div>
+      <div class="col-lg-7 bg-white">
+        <form method="POST" action="{{ url_for('signup') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+          <div class="flash-area mb-3">
+            {% with messages = get_flashed_messages(category_filter=["error","success"]) %}
+            {% if messages %}
+              {% for m in messages %}
+              <div class="alert alert-{{ 'success' if 'success' in m else 'danger' }} alert-dismissible fade show" role="alert">
+                {{ m }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+              </div>
+              {% endfor %}
+            {% endif %}
+            {% endwith %}
+          </div>
+
+          <div class="section-title"><i class="fas fa-building"></i>Mess Details<span class="pill">STEP 1</span></div>
+          <div class="row g-3 mb-3">
+            <div class="col-12">
+              <label class="form-label fw-semibold">Mess Name</label>
+              <input type="text" name="mess_name" class="form-control" placeholder="e.g., Sunrise Hostel Mess" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Daily Meal Rate (₹)</label>
+              <input type="number" name="daily_meal_rate" class="form-control" min="1" step="0.01" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Merchant Name (UPI)</label>
+              <input type="text" name="upi_name" class="form-control" placeholder="e.g., Sunrise Mess">
+            </div>
+            <div class="col-md-12">
+              <label class="form-label fw-semibold">UPI ID (Optional)</label>
+              <input type="text" name="upi_id" class="form-control" placeholder="e.g., mess@oksbi or 9876543210@ybl">
+            </div>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="section-title"><i class="fas fa-user-shield"></i>Admin Account<span class="pill">STEP 2</span></div>
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Admin Username</label>
+              <input type="text" name="admin_username" class="form-control" placeholder="e.g., sunrise_admin" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Admin Password</label>
+              <input type="password" name="admin_password" class="form-control" minlength="6" placeholder="Minimum 6 characters" required>
+            </div>
+          </div>
+
+          <div class="mt-4">
+            <div class="d-grid">
+              <button class="btn btn-primary btn-lg"><i class="fas fa-user-plus me-2"></i>Create Mess & Continue</button>
+            </div>
+            <div class="d-grid gap-2 mt-3">
+              <a href="{{ url_for('student_login', force='1') }}" class="btn btn-outline-secondary"><i class="fas fa-user-graduate me-1"></i>Student Login</a>
+              <a href="{{ url_for('login') }}" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-1"></i>Back to Admin Login</a>
+            </div>
+          </div>
+          <div class="footer-links text-center">
+            By creating a mess you agree to basic usage terms. You can remove this notice later.
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

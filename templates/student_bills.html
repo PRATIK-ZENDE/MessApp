@@ -1,0 +1,554 @@
+{% extends "student_base.html" %}
+
+{% block title %}Bills - Student Portal{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div>
+            <h2><i class="fas fa-file-invoice-dollar me-2" style="color: #06b6d4;"></i>My Bills</h2>
+            <p class="text-muted mb-0">
+                <i class="fas fa-id-card me-1"></i>{{ student.roll_no }}
+            </p>
+        </div>
+    </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center" style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.05), rgba(99, 102, 241, 0.02));">
+                <i class="fas fa-rupee-sign fa-2x mb-2" style="color: #6366f1;"></i>
+                <h5 class="fw-bold mb-2">Total Amount</h5>
+                <h3 class="mb-0" style="color: #6366f1;">₹{{ "%.2f"|format(total_amount) }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center" style="background: linear-gradient(135deg, rgba(34, 197, 94, 0.05), rgba(34, 197, 94, 0.02));">
+                <i class="fas fa-check-circle fa-2x mb-2 text-success"></i>
+                <h5 class="fw-bold mb-2">Paid</h5>
+                <h3 class="mb-0 text-success">₹{{ "%.2f"|format(paid_amount) }}</h3>
+                <p class="text-muted small mb-0">{{ bills|selectattr('paid', 'eq', True)|list|length }} bill(s)</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center" style="background: linear-gradient(135deg, rgba(251, 191, 36, 0.08), rgba(251, 146, 60, 0.02));">
+                <i class="fas fa-exclamation-circle fa-2x mb-2" style="color: #f59e0b;"></i>
+                <h5 class="fw-bold mb-2">Outstanding</h5>
+                <h3 class="mb-0" style="color: #f59e0b;">₹{{ "%.2f"|format(outstanding_amount) }}</h3>
+                <p class="text-muted small mb-0">{{ due_count }} bill(s) need payment</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center" style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(96, 165, 250, 0.05));">
+                <i class="fas fa-hourglass-half fa-2x mb-2" style="color: #3b82f6;"></i>
+                <h5 class="fw-bold mb-2">Awaiting Verification</h5>
+                <h3 class="mb-0" style="color: #3b82f6;">₹{{ "%.2f"|format(pending_verification_amount) }}</h3>
+                <p class="text-muted small mb-0">{{ pending_verification_count }} submission(s) pending</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if rejected_count > 0 %}
+<div class="alert alert-warning d-flex align-items-center" role="alert">
+    <i class="fas fa-undo-alt me-2"></i>
+    <div>
+        {{ rejected_count }} payment submission{{ 's' if rejected_count > 1 else '' }} were rejected. Please review the bill history below and resubmit the correct transaction details.
+    </div>
+</div>
+{% endif %}
+
+<!-- Bills Table -->
+<div class="card border-0 shadow-sm">
+    <div class="card-header text-white" style="background: linear-gradient(135deg, #06b6d4, #0284c7);">
+        <h5 class="mb-0"><i class="fas fa-receipt me-2"></i>Bill History</h5>
+    </div>
+    <div class="card-body">
+        {% if bills %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>Bill ID</th>
+                            <th>Month/Year</th>
+                            <th>Amount</th>
+                            <th>Meals</th>
+                            <th>Rate/Meal</th>
+                            <th>Generated On</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for bill in bills %}
+                        <tr>
+                            <td><strong>#{{ bill.id }}</strong></td>
+                            <td>
+                                <i class="fas fa-calendar-alt me-1 text-muted"></i>
+                                {% set months = ['', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'] %}
+                                {{ months[bill.month] }} {{ bill.year }}
+                            </td>
+                            <td>
+                                <strong class="text-primary">₹{{ "%.2f"|format(bill.amount) }}</strong>
+                            </td>
+                            <td>
+                                <span class="badge bg-info">
+                                    <i class="fas fa-utensils me-1"></i>{{ bill.days_present }}
+                                </span>
+                            </td>
+                            <td>₹{{ "%.2f"|format(bill.daily_rate) }}</td>
+                            <td>
+                                <small class="text-muted">
+                                    {{ bill.generated_on.strftime('%b %d, %Y') if bill.generated_on else '-' }}
+                                </small>
+                            </td>
+                            <td>
+                                {% set status = bill.payment_status %}
+                                {% set status_badge = 'warning text-dark' %}
+                                {% set status_icon = 'clock' %}
+                                {% set status_label = 'Pending Payment' %}
+                                {% if status == 'paid' %}
+                                    {% set status_badge = 'success' %}
+                                    {% set status_icon = 'check-circle' %}
+                                    {% set status_label = 'Paid' %}
+                                {% elif status == 'pending_verification' %}
+                                    {% set status_badge = 'info text-dark' %}
+                                    {% set status_icon = 'hourglass-half' %}
+                                    {% set status_label = 'Awaiting Verification' %}
+                                {% elif status == 'rejected' %}
+                                    {% set status_badge = 'danger' %}
+                                    {% set status_icon = 'times-circle' %}
+                                    {% set status_label = 'Rejected' %}
+                                {% endif %}
+                                <span class="badge bg-{{ status_badge }} fs-6">
+                                    <i class="fas fa-{{ status_icon }} me-1"></i>
+                                    {{ status_label }}
+                                </span>
+                                {% set latest_payment = bill.latest_payment %}
+                                {% if latest_payment %}
+                                <div class="small text-muted mt-2">
+                                    <i class="fas fa-wallet me-1"></i>
+                                    {{ latest_payment.method|default('upi')|replace('_', ' ')|title }} ·
+                                    {{ latest_payment.status|replace('_', ' ')|title }}
+                                </div>
+                                <div class="small text-muted">
+                                    <i class="fas fa-receipt me-1"></i>
+                                    Ref: {{ latest_payment.reference or 'N/A' }}
+                                </div>
+                                {% if status == 'rejected' %}
+                                <div class="small text-danger mt-2">
+                                    <i class="fas fa-exclamation-triangle me-1"></i>Admin rejected this submission. Please resubmit payment details.
+                                </div>
+                                {% endif %}
+                                {% elif status == 'pending' %}
+                                <div class="small text-muted mt-2">
+                                    <i class="fas fa-info-circle me-1"></i>No payment submitted yet.
+                                </div>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="d-flex flex-column flex-sm-row gap-2">
+                                    {% if status in ['pending', 'rejected'] %}
+                                        <button class="btn btn-sm btn-primary text-nowrap" data-bill-id="{{ bill.id }}" data-amount="{{ '%.2f'|format(bill.amount) }}" onclick="openPaymentModal(this)">
+                                            <i class="fas fa-wallet me-1"></i>{% if status == 'rejected' %}Pay Again{% else %}Pay Now{% endif %}
+                                        </button>
+                                    {% elif status == 'pending_verification' %}
+                                        <button class="btn btn-sm btn-outline-warning text-nowrap" disabled>
+                                            <i class="fas fa-hourglass-half me-1"></i>Awaiting Verification
+                                        </button>
+                                    {% endif %}
+                                    <button class="btn btn-sm btn-outline-secondary text-nowrap" data-bill-id="{{ bill.id }}" data-amount="{{ '%.2f'|format(bill.amount) }}" onclick="viewPaymentHistory(this)">
+                                        <i class="fas fa-history me-1"></i>Track
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="text-center py-5 text-muted">
+                <i class="fas fa-file-invoice fa-4x mb-3 opacity-50"></i>
+                <h5>No Bills Found</h5>
+                <p>You don't have any bills yet.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Info Card -->
+<div class="card border-0 shadow-sm mt-4" style="background: linear-gradient(135deg, rgba(6, 182, 212, 0.05), rgba(6, 182, 212, 0.02));">
+    <div class="card-body">
+        <h6 class="fw-bold mb-3"><i class="fas fa-info-circle me-2 text-info"></i>About Bills</h6>
+        <ul class="mb-0 small text-muted">
+            <li>Bills are generated monthly based on your attendance records</li>
+            <li>Each meal is charged at the daily meal rate set by the admin</li>
+            <li>Please contact the admin for any payment-related queries</li>
+            <li>Paid bills are marked with a green "Paid" badge</li>
+        </ul>
+    </div>
+</div>
+
+{% if recent_payments %}
+<div class="card border-0 shadow-sm mt-4">
+    <div class="card-header text-white" style="background: linear-gradient(135deg, #0ea5e9, #0284c7);">
+        <h5 class="mb-0"><i class="fas fa-money-check-alt me-2"></i>Recent Payment Activity</h5>
+    </div>
+    <div class="card-body p-0">
+        <div class="list-group list-group-flush">
+            {% for payment in recent_payments %}
+            <div class="list-group-item d-flex justify-content-between align-items-start flex-wrap gap-2">
+                <div>
+                    <div class="fw-semibold">₹{{ "%.2f"|format(payment.amount) }} · {{ payment.method|default('upi')|replace('_', ' ')|title }}</div>
+                    <div class="small text-muted">Submitted: {{ payment.created_at.strftime('%b %d, %Y %I:%M %p') if payment.created_at else 'N/A' }}</div>
+                    <div class="small text-muted">Reference: {{ payment.reference or 'N/A' }}</div>
+                    {% if payment.notes %}
+                    <div class="small text-muted">Notes: {{ payment.notes }}</div>
+                    {% endif %}
+                </div>
+                <span class="badge bg-{{ 'success' if payment.status == 'verified' else 'warning text-dark' if payment.status == 'submitted' else 'danger' }} align-self-center">
+                    <i class="fas fa-{{ 'check-circle' if payment.status == 'verified' else 'hourglass-half' if payment.status == 'submitted' else 'times-circle' }} me-1"></i>
+                    {{ payment.status|replace('_', ' ')|title }}
+                </span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Payment Modal -->
+<div class="modal fade" id="paymentModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-wallet me-2 text-primary"></i>Bill Payment</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="paymentFeedback" class="alert d-none" role="alert"></div>
+                <div class="alert alert-info d-flex align-items-center">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <div>
+                        <strong>Pay via UPI:</strong> Click "Pay with UPI" to open your preferred UPI app (Google Pay, PhonePe, Paytm, BHIM) and complete the payment instantly. 
+                        After successful payment, submit the UPI transaction ID below for verification.
+                    </div>
+                </div>
+                <form id="paymentForm" class="row g-3">
+                    <input type="hidden" id="paymentBillId">
+                    
+                    <!-- UPI Payment Section -->
+                    <div class="col-12" id="upiPaymentSection">
+                        <div class="card border-primary">
+                            <div class="card-body text-center">
+                                <h5 class="mb-3"><i class="fas fa-mobile-alt me-2 text-primary"></i>Pay with UPI</h5>
+                                <div id="upiQrCode" class="mb-3 d-none">
+                                    <img id="qrCodeImage" src="" alt="UPI QR Code" style="max-width: 200px;" class="mb-2">
+                                    <p class="small text-muted">Scan QR code with any UPI app</p>
+                                </div>
+                                <div class="d-grid gap-2">
+                                    <button type="button" class="btn btn-lg btn-primary" id="payWithUpiBtn" onclick="initiateUpiPayment()">
+                                        <i class="fas fa-qrcode me-2"></i>Pay ₹<span id="upiAmount">0.00</span> with UPI
+                                    </button>
+                                    <p class="small text-muted mb-0">Supports: Google Pay, PhonePe, Paytm, BHIM & more</p>
+                                </div>
+                                <div id="upiDetails" class="mt-3 d-none">
+                                    <div class="alert alert-success">
+                                        <i class="fas fa-check-circle me-2"></i>UPI app opened! Complete payment there.
+                                    </div>
+                                    <p class="small text-muted">UPI ID: <strong id="displayUpiId"></strong></p>
+                                    <p class="small text-muted">Transaction Ref: <strong id="displayTxnRef"></strong></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-12"><hr><p class="text-center text-muted small mb-2">After successful UPI payment, enter transaction details below</p></div>
+                    
+                    <div class="col-md-4">
+                        <label class="form-label">Amount Paid</label>
+                        <div class="input-group">
+                            <span class="input-group-text">₹</span>
+                            <input type="text" class="form-control" id="paymentAmount" readonly>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Payment Method</label>
+                        <select class="form-select" id="paymentMethod" required>
+                            <option value="upi" selected>UPI</option>
+                            <option value="googlepay">Google Pay</option>
+                            <option value="phonepe">PhonePe</option>
+                            <option value="paytm">Paytm</option>
+                            <option value="bhim">BHIM UPI</option>
+                            <option value="netbanking">Net Banking</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">UPI Transaction ID <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="paymentReference" placeholder="e.g., 123456789012" required>
+                        <small class="text-muted">Check your UPI app for transaction ID</small>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Notes (optional)</label>
+                        <textarea class="form-control" id="paymentNotes" rows="2" placeholder="Add any additional payment details or remarks"></textarea>
+                    </div>
+                    <div class="col-12 d-flex justify-content-end">
+                        <button type="submit" class="btn btn-primary" id="submitPaymentBtn">
+                            <span class="spinner-border spinner-border-sm d-none" id="paymentSpinner" role="status" aria-hidden="true"></span>
+                            <span class="btn-text">Submit Payment</span>
+                        </button>
+                    </div>
+                </form>
+                <hr class="my-4">
+                <div>
+                    <h6 class="fw-bold mb-3"><i class="fas fa-history me-2 text-secondary"></i>Payment History</h6>
+                    <div id="paymentHistory" class="list-group list-group-flush"></div>
+                    <div id="paymentHistoryEmpty" class="text-muted text-center py-3 d-none">
+                        <i class="fas fa-receipt fa-2x mb-2"></i>
+                        <p class="mb-0">No payment records yet.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let paymentModal;
+let activeBillId = null;
+
+function ensurePaymentModal() {
+    if (!paymentModal) {
+        const modalElement = document.getElementById('paymentModal');
+        paymentModal = new bootstrap.Modal(modalElement);
+        modalElement.addEventListener('hidden.bs.modal', () => {
+            resetPaymentForm();
+        });
+    }
+}
+
+function openPaymentModal(button) {
+    ensurePaymentModal();
+    const billId = button.getAttribute('data-bill-id');
+    const amount = button.getAttribute('data-amount');
+    activeBillId = billId;
+    document.getElementById('paymentBillId').value = billId;
+    document.getElementById('paymentAmount').value = amount;
+    document.getElementById('upiAmount').textContent = amount;
+    document.getElementById('paymentForm').classList.remove('d-none');
+    document.getElementById('submitPaymentBtn').disabled = false;
+    document.getElementById('paymentFeedback').classList.add('d-none');
+    document.getElementById('upiDetails').classList.add('d-none');
+    document.getElementById('upiQrCode').classList.add('d-none');
+    paymentModal.show();
+    loadPaymentHistory(billId);
+}
+
+// UPI Payment Integration
+async function initiateUpiPayment() {
+    if (!activeBillId) return;
+    
+    const payBtn = document.getElementById('payWithUpiBtn');
+    payBtn.disabled = true;
+    payBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Generating UPI link...';
+    
+    try {
+        const response = await fetch(`/student/bills/${activeBillId}/generate-upi-link`, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content') },
+            credentials: 'same-origin'
+        });
+        const data = await response.json();
+        
+        if (!response.ok || !data.success) {
+            throw new Error(data.message || 'Failed to generate UPI link');
+        }
+        
+        // Display QR code
+        document.getElementById('qrCodeImage').src = data.qr_code;
+        document.getElementById('upiQrCode').classList.remove('d-none');
+        
+        // Display UPI details
+        document.getElementById('displayUpiId').textContent = data.upi_id;
+        document.getElementById('displayTxnRef').textContent = data.transaction_ref;
+        document.getElementById('paymentReference').placeholder = data.transaction_ref;
+        
+        // Try to open UPI app (works on mobile)
+        const upiLink = data.upi_link;
+        const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+        
+        if (isMobile) {
+            // Open UPI app on mobile
+            window.location.href = upiLink;
+            document.getElementById('upiDetails').classList.remove('d-none');
+        } else {
+            // Show QR code on desktop
+            setPaymentFeedback('Scan the QR code with your mobile UPI app to complete payment', 'info');
+        }
+        
+        payBtn.innerHTML = '<i class="fas fa-redo me-2"></i>Reopen UPI App';
+        payBtn.disabled = false;
+        payBtn.onclick = () => { window.location.href = upiLink; };
+        
+    } catch (error) {
+        setPaymentFeedback(error.message || 'Unable to generate UPI link', 'danger');
+        payBtn.disabled = false;
+        payBtn.innerHTML = '<i class="fas fa-qrcode me-2"></i>Pay with UPI';
+    }
+}
+
+function viewPaymentHistory(button) {
+    ensurePaymentModal();
+    const billId = button.getAttribute('data-bill-id');
+    const amount = button.getAttribute('data-amount');
+    activeBillId = billId;
+    document.getElementById('paymentBillId').value = billId;
+    document.getElementById('paymentAmount').value = amount;
+    document.getElementById('paymentForm').classList.add('d-none');
+    document.getElementById('paymentFeedback').classList.add('d-none');
+    paymentModal.show();
+    loadPaymentHistory(billId);
+}
+
+function resetPaymentForm() {
+    document.getElementById('paymentForm').reset();
+    document.getElementById('paymentFeedback').classList.add('d-none');
+    document.getElementById('paymentHistory').innerHTML = '';
+    document.getElementById('paymentHistoryEmpty').classList.add('d-none');
+    document.getElementById('paymentSpinner').classList.add('d-none');
+    document.querySelector('#submitPaymentBtn .btn-text').textContent = 'Submit Payment';
+}
+
+function setPaymentFeedback(message, type = 'info') {
+    const alertEl = document.getElementById('paymentFeedback');
+    alertEl.className = `alert alert-${type}`;
+    alertEl.textContent = message;
+    alertEl.classList.remove('d-none');
+}
+
+async function loadPaymentHistory(billId) {
+    const historyList = document.getElementById('paymentHistory');
+    const emptyState = document.getElementById('paymentHistoryEmpty');
+    historyList.innerHTML = '<div class="text-center py-3"><div class="spinner-border" role="status"></div></div>';
+    emptyState.classList.add('d-none');
+
+    try {
+        const response = await fetch(`/student/bills/${billId}/payments`, { credentials: 'same-origin' });
+        const data = await response.json();
+        if (!response.ok || !data.success) {
+            throw new Error(data.message || 'Failed to load payment history');
+        }
+
+        if (!data.payments.length) {
+            historyList.innerHTML = '';
+            emptyState.classList.remove('d-none');
+            if (data.bill_paid) {
+                emptyState.innerHTML = '<i class="fas fa-check-circle fa-2x mb-2 text-success"></i><p class="mb-0">Bill paid and verified.</p>';
+            }
+            return;
+        }
+
+        const statusMap = {
+            submitted: { label: 'Pending Verification', badge: 'bg-warning text-dark', icon: 'fa-hourglass-half' },
+            verified: { label: 'Verified', badge: 'bg-success', icon: 'fa-check-circle' },
+            rejected: { label: 'Rejected', badge: 'bg-danger', icon: 'fa-times-circle' }
+        };
+
+        historyList.innerHTML = data.payments.map(payment => {
+            const status = statusMap[payment.status] || statusMap.submitted;
+            const createdAt = payment.created_at ? new Date(payment.created_at).toLocaleString() : 'N/A';
+            const verifiedAt = payment.verified_at ? new Date(payment.verified_at).toLocaleString() : null;
+            return `
+                <div class="list-group-item">
+                    <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+                        <div>
+                            <h6 class="mb-1">₹${payment.amount.toFixed(2)} · ${payment.method ? payment.method.toUpperCase() : 'UPI'}</h6>
+                            <div class="small text-muted">Submitted: ${createdAt}</div>
+                            <div class="small text-muted">Reference: ${payment.reference || 'N/A'}</div>
+                            ${payment.notes ? `<div class="small text-muted">Notes: ${payment.notes}</div>` : ''}
+                            ${verifiedAt ? `<div class="small text-muted">Verified: ${verifiedAt} by ${payment.verified_by || 'Admin'}</div>` : ''}
+                        </div>
+                        <span class="badge ${status.badge} align-self-center"><i class="fas ${status.icon} me-1"></i>${status.label}</span>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        const hasPendingSubmission = data.payments.some(payment => payment.status === 'submitted');
+        const paymentForm = document.getElementById('paymentForm');
+        if (data.bill_paid || hasPendingSubmission) {
+            paymentForm.classList.add('d-none');
+            if (hasPendingSubmission && !data.bill_paid) {
+                setPaymentFeedback('A payment is pending verification. You will be notified once the admin confirms it.', 'info');
+            }
+        } else {
+            paymentForm.classList.remove('d-none');
+        }
+    } catch (error) {
+        historyList.innerHTML = '';
+        emptyState.classList.remove('d-none');
+        emptyState.innerHTML = `<i class="fas fa-exclamation-triangle fa-2x mb-2 text-warning"></i><p class="mb-0">${error.message}</p>`;
+    }
+}
+
+document.getElementById('paymentForm').addEventListener('submit', async (event) => {
+    event.preventDefault();
+    if (!activeBillId) return;
+
+    const spinner = document.getElementById('paymentSpinner');
+    const submitBtn = document.getElementById('submitPaymentBtn');
+    spinner.classList.remove('d-none');
+    submitBtn.disabled = true;
+    document.querySelector('#submitPaymentBtn .btn-text').textContent = 'Submitting...';
+
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    const payload = {
+        amount: document.getElementById('paymentAmount').value,
+        method: document.getElementById('paymentMethod').value,
+        reference: document.getElementById('paymentReference').value,
+        notes: document.getElementById('paymentNotes').value
+    };
+
+    try {
+        const response = await fetch(`/student/bills/${activeBillId}/initiate-payment`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            credentials: 'same-origin',
+            body: JSON.stringify(payload)
+        });
+        const data = await response.json();
+        if (!response.ok || !data.success) {
+            throw new Error(data.message || 'Failed to submit payment');
+        }
+
+        setPaymentFeedback(data.message || 'Payment submitted successfully.', 'success');
+        loadPaymentHistory(activeBillId);
+        setTimeout(() => {
+            paymentModal.hide();
+            window.location.reload();
+        }, 1500);
+    } catch (error) {
+        setPaymentFeedback(error.message || 'Unable to submit payment.', 'danger');
+    } finally {
+        spinner.classList.add('d-none');
+        submitBtn.disabled = false;
+        document.querySelector('#submitPaymentBtn .btn-text').textContent = 'Submit Payment';
+    }
+});
+</script>
+{% endblock %}

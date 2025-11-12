@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center align-items-center" style="min-height: 70vh;">
+    <div class="col-12" style="max-width: 450px; margin: 0 auto;">
+        <div class="card shadow-hover" style="border: 2px solid var(--primary-lightest);">
+            <div class="card-header text-center">
+                <div class="mb-3">
+                    <div class="d-inline-flex align-items-center justify-content-center" style="width: 80px; height: 80px; background: var(--gradient-primary); border-radius: 20px; box-shadow: 0 8px 20px rgba(249, 115, 22, 0.3);">
+                        <i class="fas fa-utensils fa-2x" style="color: white;"></i>
+                    </div>
+                </div>
+                <h3 class="mb-0" style="font-weight: 800;">Welcome Back!</h3>
+                <p class="text-white-50 mb-0 mt-2">Sign in to your account</p>
+            </div>
+            <div class="card-body p-4">
+                {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                    {% for message in messages %}
+                    <div class="alert alert-danger alert-dismissible fade show d-flex align-items-center" role="alert">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <div>{{ message }}</div>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                    {% endfor %}
+                {% endif %}
+                {% endwith %}
+
+                <form method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="mb-4">
+                        <label for="username" class="form-label">
+                            <i class="fas fa-user me-2 text-gradient-primary"></i>Username
+                        </label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-user"></i></span>
+                            <input type="text" class="form-control" id="username" name="username" placeholder="Enter your username" required autofocus>
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label for="password" class="form-label">
+                            <i class="fas fa-lock me-2 text-gradient-primary"></i>Password
+                        </label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                            <input type="password" class="form-control" id="password" name="password" placeholder="Enter your password" required>
+                        </div>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-sign-in-alt me-2"></i>Sign In
+                        </button>
+                    </div>
+                </form>
+
+                <div class="d-flex justify-content-between mt-3 flex-wrap gap-2">
+                    <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-1"></i>Home
+                    </a>
+                    <a href="{{ url_for('student_login', force='1') }}" class="btn btn-secondary">
+                        <i class="fas fa-user-graduate me-1"></i>Student Login
+                    </a>
+                </div>
+                <div class="mt-3 text-center">
+                    <small class="text-muted">Need a mess account? <a href="{{ url_for('signup') }}" class="fw-semibold text-decoration-none">Create an account</a></small>
+                </div>
+            </div>
+            <div class="card-footer text-center" style="background: var(--primary-lightest); border-top: none;">
+                <small class="text-muted">
+                    <i class="fas fa-shield-alt me-1"></i>Secure Login Portal
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

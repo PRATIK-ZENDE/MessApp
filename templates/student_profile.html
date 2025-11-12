@@ -1,0 +1,134 @@
+{% extends "student_base.html" %}
+
+{% block title %}Profile - Student Portal{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2><i class="fas fa-user-circle me-2" style="color: #14b8a6;"></i>My Profile</h2>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-4 mb-4">
+        <!-- Profile Card -->
+        <div class="card border-0 shadow-sm">
+            <div class="card-body text-center" style="background: linear-gradient(135deg, rgba(20, 184, 166, 0.05), rgba(6, 182, 212, 0.05));">
+                <div class="avatar mx-auto mb-3" style="width: 120px; height: 120px; background: linear-gradient(135deg, #14b8a6, #06b6d4); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                    <i class="fas fa-user fa-4x text-white"></i>
+                </div>
+                <h4 class="mb-1">{{ student.name }}</h4>
+                <p class="text-muted mb-2">{{ student.roll_no }}</p>
+                <hr class="my-3">
+                <p class="small text-muted mb-0">
+                    <i class="fas fa-calendar-alt me-1"></i>
+                    Member since {{ student.created_at.strftime('%B %Y') if student.created_at else 'N/A' }}
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        <!-- Edit Profile Form -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header text-white" style="background: linear-gradient(135deg, #14b8a6, #06b6d4);">
+                <h5 class="mb-0"><i class="fas fa-edit me-2"></i>Edit Profile</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-semibold">
+                                <i class="fas fa-user me-1 text-muted"></i>Full Name
+                            </label>
+                            <input type="text" class="form-control" value="{{ student.name }}" disabled>
+                            <small class="text-muted">Contact admin to change name</small>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-semibold">
+                                <i class="fas fa-id-card me-1 text-muted"></i>Roll Number
+                            </label>
+                            <input type="text" class="form-control" value="{{ student.roll_no }}" disabled>
+                            <small class="text-muted">Cannot be changed</small>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="contact" class="form-label fw-semibold">
+                                <i class="fas fa-phone me-1 text-primary"></i>Contact Number
+                            </label>
+                            <input type="text" class="form-control" id="contact" name="contact" 
+                                   value="{{ student.contact or '' }}" placeholder="Enter contact number">
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="email" class="form-label fw-semibold">
+                                <i class="fas fa-envelope me-1 text-primary"></i>Email Address
+                            </label>
+                            <input type="email" class="form-control" id="email" name="email" 
+                                   value="{{ student.email or '' }}" placeholder="Enter email address">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="address" class="form-label fw-semibold">
+                            <i class="fas fa-map-marker-alt me-1 text-primary"></i>Address
+                        </label>
+                        <textarea class="form-control" id="address" name="address" rows="3" 
+                                  placeholder="Enter address">{{ student.address or '' }}</textarea>
+                    </div>
+                    
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-lg text-white" style="background: linear-gradient(135deg, #14b8a6, #06b6d4);">
+                            <i class="fas fa-save me-2"></i>Update Profile
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Change Password -->
+        <div class="card border-0 shadow-sm">
+            <div class="card-header text-white" style="background: linear-gradient(135deg, #f59e0b, #f97316);">
+                <h5 class="mb-0"><i class="fas fa-key me-2"></i>Change Password</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    
+                    <div class="mb-3">
+                        <label for="new_password" class="form-label fw-semibold">
+                            <i class="fas fa-lock me-1 text-warning"></i>New Password
+                        </label>
+                        <input type="password" class="form-control" id="new_password" name="new_password" 
+                               placeholder="Enter new password">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="confirm_password" class="form-label fw-semibold">
+                            <i class="fas fa-lock me-1 text-warning"></i>Confirm Password
+                        </label>
+                        <input type="password" class="form-control" id="confirm_password" name="confirm_password" 
+                               placeholder="Confirm new password">
+                    </div>
+                    
+                    <div class="alert alert-info mb-3">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <small>Leave blank if you don't want to change your password</small>
+                    </div>
+                    
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-warning btn-lg">
+                            <i class="fas fa-key me-2"></i>Change Password
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Profile{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="fas fa-user-shield me-2"></i>Admin Profile</h4>
+                </div>
+                <div class="card-body">
+                    <!-- Mess Info (Read-only) -->
+                    <div class="mb-4">
+                        <h5 class="border-bottom pb-2">Mess Information</h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong>Mess Name:</strong> {{ mess.name if mess else 'N/A' }}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>Username:</strong> {{ user.username }}</p>
+                            </div>
+                        </div>
+                        <p class="text-muted small">
+                            <i class="fas fa-info-circle"></i> To update mess details (daily rate, UPI info), go to 
+                            <a href="{{ url_for('settings') }}">Settings</a>
+                        </p>
+                    </div>
+
+                    <!-- Change Password Form -->
+                    <div class="mb-4">
+                        <h5 class="border-bottom pb-2">Change Password</h5>
+                        <form method="POST" action="{{ url_for('admin_profile') }}">
+                            <input type="hidden" name="action" value="change_password">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            
+                            <div class="mb-3">
+                                <label for="current_password" class="form-label">Current Password</label>
+                                <input type="password" class="form-control" id="current_password" 
+                                       name="current_password" required>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="new_password" class="form-label">New Password</label>
+                                <input type="password" class="form-control" id="new_password" 
+                                       name="new_password" required minlength="6">
+                                <small class="text-muted">Minimum 6 characters</small>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="confirm_password" class="form-label">Confirm New Password</label>
+                                <input type="password" class="form-control" id="confirm_password" 
+                                       name="confirm_password" required minlength="6">
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-key me-1"></i>Change Password
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Update Username Form -->
+                    <div class="mb-3">
+                        <h5 class="border-bottom pb-2">Update Username</h5>
+                        <form method="POST" action="{{ url_for('admin_profile') }}">
+                            <input type="hidden" name="action" value="update_info">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            
+                            <div class="mb-3">
+                                <label for="username" class="form-label">Username</label>
+                                <input type="text" class="form-control" id="username" 
+                                       name="username" value="{{ user.username }}" required>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-secondary">
+                                <i class="fas fa-save me-1"></i>Update Username
+                            </button>
+                        </form>
+                    </div>
+
+                    <div class="mt-4">
+                        <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Password match validation
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form[action="{{ url_for("admin_profile") }}"]');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const newPass = document.getElementById('new_password');
+            const confirmPass = document.getElementById('confirm_password');
+            
+            if (newPass && confirmPass && newPass.value !== confirmPass.value) {
+                e.preventDefault();
+                alert('New passwords do not match!');
+                confirmPass.focus();
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,527 @@
+{% extends "base.html" %}
+
+{% block head %}
+<meta name="csrf-token" content="{{ csrf_token() }}">
+<style>
+    .qr-container {
+        animation: pulse 2s ease-in-out infinite;
+    }
+    
+    @keyframes pulse {
+        0%, 100% {
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        50% {
+            box-shadow: 0 8px 16px rgba(249, 115, 22, 0.3);
+        }
+    }
+    
+    .session-details {
+        animation: fadeIn 0.5s ease;
+    }
+    
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Generate QR Code for Students Section -->
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h2 class="mb-0">
+                    <i class="fas fa-qrcode me-2"></i>Generate Attendance QR Code
+                </h2>
+                <small class="text-white-50">Students will scan this QR code to mark their attendance</small>
+            </div>
+            <div class="card-body">
+                <!-- Session Creation Form -->
+                <div id="sessionForm">
+                    <div class="mb-3">
+                        <label for="sessionMealType" class="form-label">
+                            <i class="fas fa-utensils me-2"></i><strong>Meal Type</strong>
+                        </label>
+                        <select class="form-select" id="sessionMealType">
+                            <option value="lunch" {% if current_meal == 'lunch' %}selected{% endif %}>Lunch</option>
+                            <option value="dinner" {% if current_meal == 'dinner' %}selected{% endif %}>Dinner</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="sessionDuration" class="form-label">
+                            <i class="fas fa-clock me-2"></i><strong>Session Duration</strong>
+                        </label>
+                        <select class="form-select" id="sessionDuration">
+                            <option value="15">15 minutes</option>
+                            <option value="30">30 minutes</option>
+                            <option value="45">45 minutes</option>
+                            <option value="60">1 hour</option>
+                            <option value="120" selected>2 hours</option>
+                        </select>
+                    </div>
+                    <div class="d-grid">
+                        <button class="btn btn-primary btn-lg" id="createSessionBtn">
+                            <i class="fas fa-plus-circle me-2"></i>Generate QR Code
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Active Session Display -->
+                <div id="activeSessionDisplay" style="display: none;">
+                    <div class="alert alert-success border-0 mb-3">
+                        <i class="fas fa-check-circle me-2"></i>
+                        <strong>Active Session Created!</strong>
+                    </div>
+                    
+                    <div class="text-center mb-3">
+                        <div class="qr-container p-3 bg-white rounded shadow-sm d-inline-block">
+                            <img id="sessionQRCode" src="" alt="QR Code" style="max-width: 300px; width: 100%;">
+                        </div>
+                    </div>
+                    
+                    <div class="session-details p-3 mb-3" style="background: linear-gradient(135deg, var(--primary-lightest), white); border-radius: 12px; border-left: 4px solid var(--primary-color);">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span><i class="fas fa-utensils me-2"></i><strong>Meal:</strong></span>
+                            <span id="sessionMeal" class="badge badge-primary"></span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span><i class="fas fa-clock me-2"></i><strong>Expires:</strong></span>
+                            <span id="sessionExpiry" class="text-muted"></span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span><i class="fas fa-users me-2"></i><strong>Scanned:</strong></span>
+                            <span id="sessionCount" class="badge badge-secondary">0</span>
+                        </div>
+                        <div class="mt-3">
+                            <label class="form-label small text-muted"><i class="fas fa-link me-2"></i>Scan URL</label>
+                            <div class="input-group input-group-sm">
+                                <input type="text" class="form-control" id="sessionScanUrl" readonly>
+                                <button class="btn btn-outline-primary" type="button" id="copyScanUrlBtn"><i class="fas fa-copy me-1"></i>Copy</button>
+                            </div>
+                            <small class="text-muted">Share this link for students to open the scan page directly.</small>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-secondary" id="refreshSessionBtn">
+                            <i class="fas fa-sync-alt me-2"></i>Refresh Count
+                        </button>
+                        <button class="btn btn-danger" id="closeSessionBtn">
+                            <i class="fas fa-times-circle me-2"></i>Close Session
+                        </button>
+                        <button class="btn btn-outline-primary" id="newSessionBtn">
+                            <i class="fas fa-plus me-2"></i>Create New Session
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Manual Attendance Form -->
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h2 class="mb-0">
+                    <i class="fas fa-pen-alt me-2"></i>Manual Attendance
+                </h2>
+                <small class="text-white-50">Mark attendance manually if needed</small>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="mb-3">
+                        <label for="student_id" class="form-label">Student</label>
+                        <select class="form-select" name="student_id" required>
+                            <option value="">Select student</option>
+                            {% for student in students %}
+                            <option value="{{ student.id }}" {% if request.args.get('student_id')|int == student.id %}selected{% endif %}>{{ student.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="date" class="form-label">Date</label>
+                        <input type="date" class="form-control" name="date" id="date" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Meals</label>
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" name="meal_type" value="lunch" id="lunch">
+                            <label class="form-check-label" for="lunch">Lunch</label>
+                        </div>
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" name="meal_type" value="dinner" id="dinner">
+                            <label class="form-check-label" for="dinner">Dinner</label>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-secondary">
+                        <i class="fas fa-check-circle me-2"></i>Mark Attendance
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header text-white" style="background: linear-gradient(45deg, var(--teal-500), #0d9488);">
+        <div class="d-flex justify-content-between align-items-center">
+            <h3 class="mb-0">Today's Attendance</h3>
+            <div class="d-flex gap-2">
+                <button class="btn btn-sm btn-light" id="refreshAttendance">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+                <button class="btn btn-sm btn-light" type="button" data-bs-toggle="collapse" data-bs-target="#filterSection">
+                    <i class="fas fa-filter"></i> Filters
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="collapse" id="filterSection">
+        <div class="card-body border-bottom p-2" style="background-color: var(--slate-50);">
+            <div class="row g-2 align-items-end">
+                <div class="col">
+                    <div class="d-flex flex-column">
+                        <label class="form-label mb-1 small fw-bold text-secondary">Date Range</label>
+                        <select class="form-select form-select-sm" id="dateFilter">
+                            {% set dr = request.args.get('dateRange', 'today') %}
+                            <option value="today" {% if dr=='today' %}selected{% endif %}>Today</option>
+                            <option value="yesterday" {% if dr=='yesterday' %}selected{% endif %}>Yesterday</option>
+                            <option value="thisWeek" {% if dr=='thisWeek' %}selected{% endif %}>This Week</option>
+                            <option value="lastWeek" {% if dr=='lastWeek' %}selected{% endif %}>Last Week</option>
+                            <option value="thisMonth" {% if dr=='thisMonth' %}selected{% endif %}>This Month</option>
+                            <option value="custom" {% if dr=='custom' %}selected{% endif %}>Custom Range</option>
+                        </select>
+                        <div id="customRangeInputs" class="mt-2" style="display:none; gap: 0.5rem;">
+                            <div class="input-group input-group-sm mb-1">
+                                <span class="input-group-text"><i class="fas fa-play"></i></span>
+                                <input type="date" class="form-control" id="startDate" value="{{ request.args.get('startDate','') }}">
+                            </div>
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text"><i class="fas fa-stop"></i></span>
+                                <input type="date" class="form-control" id="endDate" value="{{ request.args.get('endDate','') }}">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="d-flex flex-column">
+                        <label class="form-label mb-1 small fw-bold text-secondary">Meal Type</label>
+                        {% set mt = request.args.get('mealType', 'all') %}
+                        <select class="form-select form-select-sm" id="mealFilter">
+                            <option value="all" {% if mt=='all' %}selected{% endif %}>All Meals</option>
+                            <option value="lunch" {% if mt=='lunch' %}selected{% endif %}>Lunch Only</option>
+                            <option value="dinner" {% if mt=='dinner' %}selected{% endif %}>Dinner Only</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="d-flex flex-column">
+                        <label class="form-label mb-1 small fw-bold text-secondary">Sort By</label>
+                        {% set so = request.args.get('sort', 'recent') %}
+                        <select class="form-select form-select-sm" id="sortFilter">
+                            <option value="name" {% if so=='name' %}selected{% endif %}>Student Name</option>
+                            <option value="recent" {% if so=='recent' %}selected{% endif %}>Most Recent</option>
+                            <option value="mealType" {% if so=='mealType' %}selected{% endif %}>Meal Type</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-auto">
+                    <button class="btn h-100 px-4" id="applyFilters" style="background: linear-gradient(135deg, var(--teal-400), var(--teal-500)); color: white;">
+                        <i class="fas fa-check me-1"></i> Apply Filters
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card-body" style="background: linear-gradient(135deg, var(--teal-50), var(--slate-50));">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Time</th>
+                        <th>Student</th>
+                        <th>Meal Type</th>
+                        <th>Method</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if today_attendance %}
+                        {% for attendance in today_attendance %}
+                        <tr>
+                            <td>{{ attendance.timestamp.strftime('%I:%M %p') }}</td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="ms-2">
+                                        <div class="fw-bold">{{ attendance.student.name }}</div>
+                                        <div class="small text-muted">ID: {{ attendance.student.id }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                {% if attendance.meal_type == 'lunch' %}
+                                    <span class="badge rounded-pill" style="background-color: var(--teal-400);">Lunch</span>
+                                {% else %}
+                                    <span class="badge rounded-pill" style="background-color: var(--indigo-400);">Dinner</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if attendance.method == 'qr' or attendance.method == 'qr_scan' %}
+                                    <span class="badge bg-success">QR Scan</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Manual</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary me-1 edit-attendance"
+                                    data-id="{{ attendance.id }}"
+                                    data-date="{{ attendance.date.strftime('%Y-%m-%d') }}"
+                                    data-meal="{{ attendance.meal_type }}">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger delete-attendance" data-id="{{ attendance.id }}">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="5" class="text-center py-4">
+                                <div class="text-muted">
+                                    <i class="fas fa-calendar-times fa-3x mb-3"></i>
+                                    <p>No attendance records found for today</p>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+// Set today's date as default
+document.addEventListener('DOMContentLoaded', function() {
+    const dateInput = document.getElementById('date');
+    if (dateInput && !dateInput.value) {
+        const today = new Date().toISOString().split('T')[0];
+        dateInput.value = today;
+    }
+    
+    // Check for active sessions on load
+    checkActiveSessions();
+});
+
+let currentSessionId = null;
+
+// Create new attendance session
+document.getElementById('createSessionBtn').addEventListener('click', function() {
+    const mealType = document.getElementById('sessionMealType').value;
+    const duration = document.getElementById('sessionDuration').value;
+    const btn = this;
+    
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Creating...';
+    
+    const formData = new FormData();
+    formData.append('meal_type', mealType);
+    formData.append('duration', duration);
+    formData.append('csrf_token', document.querySelector('meta[name="csrf-token"]').content);
+    
+    fetch('{{ url_for("create_attendance_session") }}', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            currentSessionId = data.session.id;
+            displayActiveSession(data.session);
+        } else {
+            alert('Error: ' + data.message);
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-plus-circle me-2"></i>Generate QR Code';
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to create session');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-plus-circle me-2"></i>Generate QR Code';
+    });
+});
+
+// Display active session
+function displayActiveSession(session) {
+    document.getElementById('sessionForm').style.display = 'none';
+    document.getElementById('activeSessionDisplay').style.display = 'block';
+    
+    // Set QR code image
+    document.getElementById('sessionQRCode').src = '{{ url_for("get_session_qr", session_id=0) }}'.replace('/0', '/' + session.id);
+    
+    // Set session details
+    document.getElementById('sessionMeal').textContent = session.meal_type.toUpperCase();
+    document.getElementById('sessionExpiry').textContent = new Date(session.expires_at).toLocaleTimeString();
+    document.getElementById('sessionCount').textContent = session.attendance_count;
+    // Set scan URL text for sharing/copying
+    const scanUrlInput = document.getElementById('sessionScanUrl');
+    if (scanUrlInput && session.token) {
+        scanUrlInput.value = `${window.location.origin}/scan/${session.token}`;
+    }
+    
+    // Start auto-refresh
+    startAutoRefresh();
+}
+
+// Refresh session count
+document.getElementById('refreshSessionBtn').addEventListener('click', function() {
+    if (currentSessionId) {
+        updateSessionCount();
+    }
+});
+
+// Update session attendance count
+function updateSessionCount() {
+    fetch('{{ url_for("get_active_sessions") }}')
+    .then(response => response.json())
+    .then(data => {
+        if (data.success && data.sessions.length > 0) {
+            const session = data.sessions.find(s => s.id === currentSessionId);
+            if (session) {
+                document.getElementById('sessionCount').textContent = session.attendance_count;
+            }
+        }
+    })
+    .catch(error => console.error('Error refreshing count:', error));
+}
+
+// Auto-refresh count every 5 seconds
+let refreshInterval;
+function startAutoRefresh() {
+    refreshInterval = setInterval(updateSessionCount, 5000);
+}
+
+function stopAutoRefresh() {
+    if (refreshInterval) {
+        clearInterval(refreshInterval);
+    }
+}
+
+// Close session
+document.getElementById('closeSessionBtn').addEventListener('click', function() {
+    if (!currentSessionId) return;
+    
+    if (!confirm('Are you sure you want to close this session?')) return;
+    
+    const btn = this;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Closing...';
+    
+    const formData = new FormData();
+    formData.append('csrf_token', document.querySelector('meta[name="csrf-token"]').content);
+    
+    fetch(`/close-session/${currentSessionId}`, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            stopAutoRefresh();
+            resetSessionForm();
+            alert('Session closed successfully');
+            location.reload(); // Refresh to show updated attendance
+        } else {
+            alert('Error: ' + data.message);
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-times-circle me-2"></i>Close Session';
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to close session');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-times-circle me-2"></i>Close Session';
+    });
+});
+
+// Create new session
+document.getElementById('newSessionBtn').addEventListener('click', function() {
+    stopAutoRefresh();
+    resetSessionForm();
+});
+
+function resetSessionForm() {
+    currentSessionId = null;
+    document.getElementById('sessionForm').style.display = 'block';
+    document.getElementById('activeSessionDisplay').style.display = 'none';
+    document.getElementById('createSessionBtn').disabled = false;
+    document.getElementById('createSessionBtn').innerHTML = '<i class="fas fa-plus-circle me-2"></i>Generate QR Code';
+}
+
+// Check for active sessions on page load
+function checkActiveSessions() {
+    fetch('{{ url_for("get_active_sessions") }}')
+    .then(response => response.json())
+    .then(data => {
+        if (data.success && data.sessions.length > 0) {
+            // Show the most recent active session
+            const session = data.sessions[0];
+            currentSessionId = session.id;
+            displayActiveSession(session);
+        }
+    })
+    .catch(error => console.error('Error checking sessions:', error));
+}
+</script>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/attendance.js') }}"></script>
+
+<!-- Edit Attendance Modal -->
+<div class="modal fade" id="editAttendanceModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="false" data-bs-keyboard="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-edit me-2"></i>Edit Attendance</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editAttendanceForm">
+                    <input type="hidden" id="editAttendanceId">
+                    <div class="mb-3">
+                        <label for="editAttendanceDate" class="form-label">Date</label>
+                        <input type="date" class="form-control" id="editAttendanceDate" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editAttendanceMeal" class="form-label">Meal Type</label>
+                        <select class="form-select" id="editAttendanceMeal" required>
+                            <option value="lunch">Lunch</option>
+                            <option value="dinner">Dinner</option>
+                        </select>
+                    </div>
+                </form>
+                <div class="alert alert-warning d-none" id="editAttendanceWarning"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="saveAttendanceChanges"><i class="fas fa-save me-1"></i>Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

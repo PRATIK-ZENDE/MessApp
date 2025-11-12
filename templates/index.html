@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-10 text-center mt-5">
+            <div class="mb-5">
+                <i class="fas fa-utensils fa-5x mb-4" style="color: var(--orange-500);"></i>
+                <h1 class="display-3 fw-bold mb-4" style="font-family: 'Poppins', sans-serif;">Mess Management System</h1>
+                <p class="lead mb-5" style="color: var(--slate-600);">
+                    Streamline your mess operations with our comprehensive management solution
+                </p>
+            </div>
+            
+            <div class="row g-4 justify-content-center">
+                {% if current_user.is_authenticated %}
+                    <!-- Admin Dashboard Link -->
+                    <div class="col-md-6">
+                        <div class="card border-0 shadow-lg h-100" style="background: linear-gradient(135deg, var(--orange-400), var(--orange-500));">
+                            <div class="card-body text-white p-5">
+                                <i class="fas fa-user-shield fa-4x mb-3"></i>
+                                <h3 class="mb-3">Admin Dashboard</h3>
+                                <p class="mb-4">Manage students, attendance, and billing</p>
+                                <a href="{{ url_for('dashboard') }}" class="btn btn-light btn-lg">
+                                    <i class="fas fa-columns me-2"></i>Go to Dashboard
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                {% else %}
+                    <!-- Admin Login -->
+                    <div class="col-md-5">
+                        <div class="card border-0 shadow-lg h-100" style="background: linear-gradient(135deg, var(--orange-400), var(--orange-500));">
+                            <div class="card-body text-white p-5">
+                                <i class="fas fa-user-shield fa-4x mb-3"></i>
+                                <h3 class="mb-3">Admin Portal</h3>
+                                <p class="mb-4">Manage mess operations</p>
+                                <a href="{{ url_for('login') }}" class="btn btn-light btn-lg">
+                                    <i class="fas fa-sign-in-alt me-2"></i>Admin Login
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Student Login -->
+                    <div class="col-md-5">
+                        <div class="card border-0 shadow-lg h-100" style="background: linear-gradient(135deg, var(--secondary-light), var(--secondary-color));">
+                            <div class="card-body text-white p-5">
+                                <i class="fas fa-user-graduate fa-4x mb-3"></i>
+                                <h3 class="mb-3">Student Portal</h3>
+                                <p class="mb-4">View attendance & bills</p>
+                                <a href="{{ url_for('student_login', force='1') }}" class="btn btn-light btn-lg" style="color: var(--secondary-dark);">
+                                    <i class="fas fa-sign-in-alt me-2"></i>Student Login
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+            
+            <!-- Features Section -->
+            <div class="row mt-5 pt-5">
+                <div class="col-12 mb-4">
+                    <h2 class="fw-bold" style="color: var(--slate-700);">Key Features</h2>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <div class="p-4">
+                        <i class="fas fa-qrcode fa-3x mb-3" style="color: var(--teal-500);"></i>
+                        <h5 class="fw-bold">QR Attendance</h5>
+                        <p class="text-muted">Quick and contactless attendance marking</p>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <div class="p-4">
+                        <i class="fas fa-file-invoice fa-3x mb-3" style="color: var(--indigo-500);"></i>
+                        <h5 class="fw-bold">Automated Billing</h5>
+                        <p class="text-muted">Generate bills based on attendance records</p>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <div class="p-4">
+                        <i class="fas fa-chart-line fa-3x mb-3" style="color: var(--orange-500);"></i>
+                        <h5 class="fw-bold">Real-time Tracking</h5>
+                        <p class="text-muted">Monitor attendance and payments instantly</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

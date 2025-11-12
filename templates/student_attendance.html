@@ -1,0 +1,553 @@
+{% extends "student_base.html" %}
+
+{% block title %}Attendance - Student Portal{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h2><i class="fas fa-calendar-check me-2" style="color: #14b8a6;"></i>My Attendance</h2>
+                <p class="text-muted mb-0">
+                    <i class="fas fa-id-card me-1"></i>{{ student.roll_no }}
+                </p>
+            </div>
+            <div>
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#qrScannerModal">
+                    <i class="fas fa-qrcode me-2"></i>Scan QR Code
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row g-4 mb-4">
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm text-center">
+            <div class="card-body" style="background: linear-gradient(135deg, rgba(20, 184, 166, 0.05), rgba(20, 184, 166, 0.02));">
+                <i class="fas fa-utensils fa-2x mb-2" style="color: #14b8a6;"></i>
+                <h4 class="mb-0" style="color: #14b8a6;">{{ attendance_count }}</h4>
+                <small class="text-muted">Total Meals</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm text-center">
+            <div class="card-body" style="background: linear-gradient(135deg, rgba(251, 146, 60, 0.05), rgba(251, 146, 60, 0.02));">
+                <i class="fas fa-sun fa-2x mb-2 text-warning"></i>
+                <h4 class="mb-0 text-warning">{{ lunch_count }}</h4>
+                <small class="text-muted">Lunch</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm text-center">
+            <div class="card-body" style="background: linear-gradient(135deg, rgba(6, 182, 212, 0.05), rgba(6, 182, 212, 0.02));">
+                <i class="fas fa-moon fa-2x mb-2 text-primary"></i>
+                <h4 class="mb-0 text-primary">{{ dinner_count }}</h4>
+                <small class="text-muted">Dinner</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- View Tabs -->
+<ul class="nav nav-tabs mb-4" id="viewTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="calendar-tab" data-bs-toggle="tab" data-bs-target="#calendar-view" type="button">
+            <i class="fas fa-calendar-alt me-2"></i>Calendar View
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="list-tab" data-bs-toggle="tab" data-bs-target="#list-view" type="button">
+            <i class="fas fa-list me-2"></i>List View
+        </button>
+    </li>
+</ul>
+
+<div class="tab-content" id="viewTabContent">
+    <!-- Calendar View -->
+    <div class="tab-pane fade show active" id="calendar-view" role="tabpanel">
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header text-white" style="background: linear-gradient(135deg, #14b8a6, #06b6d4);">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-calendar-alt me-2"></i>{{ calendar_month_name }} {{ calendar_year }}</h5>
+                    <div>
+                        <a href="{{ url_for('student_attendance') }}?view=calendar&month={{ prev_month }}&year={{ prev_year }}" class="btn btn-sm btn-light me-2">
+                            <i class="fas fa-chevron-left"></i>
+                        </a>
+                        <a href="{{ url_for('student_attendance') }}?view=calendar&month={{ next_month }}&year={{ next_year }}" class="btn btn-sm btn-light">
+                            <i class="fas fa-chevron-right"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="calendar-grid">
+                    <style>
+                        .calendar-grid {
+                            display: grid;
+                            grid-template-columns: repeat(7, 1fr);
+                            gap: 8px;
+                        }
+                        .calendar-day-header {
+                            text-align: center;
+                            font-weight: 600;
+                            padding: 10px;
+                            background: #f8fafc;
+                            border-radius: 8px;
+                            font-size: 0.9rem;
+                            color: #64748b;
+                        }
+                        .calendar-day {
+                            aspect-ratio: 1;
+                            border: 2px solid #e2e8f0;
+                            border-radius: 12px;
+                            padding: 8px;
+                            text-align: center;
+                            position: relative;
+                            background: white;
+                            transition: all 0.2s ease;
+                        }
+                        .calendar-day:hover {
+                            border-color: #14b8a6;
+                            box-shadow: 0 4px 12px rgba(20, 184, 166, 0.15);
+                        }
+                        .calendar-day.empty {
+                            border: none;
+                            background: transparent;
+                        }
+                        .calendar-day.future {
+                            background: #f8fafc;
+                            color: #cbd5e1;
+                        }
+                        .calendar-day-number {
+                            font-weight: 600;
+                            font-size: 1.1rem;
+                            margin-bottom: 4px;
+                        }
+                        .meal-indicators {
+                            display: flex;
+                            justify-content: center;
+                            gap: 4px;
+                            margin-top: 6px;
+                        }
+                        .meal-badge {
+                            width: 24px;
+                            height: 24px;
+                            border-radius: 50%;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            font-size: 0.7rem;
+                        }
+                        .meal-badge.lunch {
+                            background: #fbbf24;
+                            color: white;
+                        }
+                        .meal-badge.dinner {
+                            background: #06b6d4;
+                            color: white;
+                        }
+                        .meal-badge.empty {
+                            background: #e2e8f0;
+                            color: #94a3b8;
+                        }
+                        
+                        /* Fix modal z-index and appearance to ensure it appears bright above backdrop */
+                        .modal-backdrop {
+                            z-index: 1040 !important;
+                        }
+                        #qrScannerModal {
+                            z-index: 1055 !important;
+                        }
+                        #qrScannerModal.show {
+                            z-index: 1055 !important;
+                        }
+                        #qrScannerModal .modal-dialog {
+                            z-index: 1056 !important;
+                            position: relative;
+                        }
+                        #qrScannerModal .modal-content {
+                            z-index: 1057 !important;
+                            background: white !important;
+                            opacity: 1 !important;
+                            position: relative;
+                            box-shadow: 0 10px 40px rgba(0,0,0,0.4) !important;
+                        }
+                        #qrScannerModal .modal-header,
+                        #qrScannerModal .modal-body,
+                        #qrScannerModal .modal-footer {
+                            opacity: 1 !important;
+                            filter: none !important;
+                        }
+                        #qrScannerModal input,
+                        #qrScannerModal button,
+                        #qrScannerModal * {
+                            pointer-events: auto !important;
+                        }
+                    </style>
+                    
+                    <!-- Day headers -->
+                    <div class="calendar-day-header">Sun</div>
+                    <div class="calendar-day-header">Mon</div>
+                    <div class="calendar-day-header">Tue</div>
+                    <div class="calendar-day-header">Wed</div>
+                    <div class="calendar-day-header">Thu</div>
+                    <div class="calendar-day-header">Fri</div>
+                    <div class="calendar-day-header">Sat</div>
+                    
+                    <!-- Calendar days -->
+                    {% for day_info in calendar_days %}
+                        {% if day_info.empty %}
+                            <div class="calendar-day empty"></div>
+                        {% else %}
+                            <div class="calendar-day {{ 'future' if day_info.is_future else '' }}">
+                                <div class="calendar-day-number">{{ day_info.day }}</div>
+                                {% if not day_info.is_future %}
+                                    <div class="meal-indicators">
+                                        {% if day_info.has_lunch %}
+                                            <div class="meal-badge lunch" title="Lunch">
+                                                <i class="fas fa-sun"></i>
+                                            </div>
+                                        {% else %}
+                                            <div class="meal-badge empty">
+                                                <i class="fas fa-sun"></i>
+                                            </div>
+                                        {% endif %}
+                                        {% if day_info.has_dinner %}
+                                            <div class="meal-badge dinner" title="Dinner">
+                                                <i class="fas fa-moon"></i>
+                                            </div>
+                                        {% else %}
+                                            <div class="meal-badge empty">
+                                                <i class="fas fa-moon"></i>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+                
+                <!-- Legend -->
+                <div class="mt-4 pt-3 border-top">
+                    <div class="row text-center">
+                        <div class="col-md-4">
+                            <span class="meal-badge lunch me-2"><i class="fas fa-sun"></i></span>
+                            <small>Lunch Attended</small>
+                        </div>
+                        <div class="col-md-4">
+                            <span class="meal-badge dinner me-2"><i class="fas fa-moon"></i></span>
+                            <small>Dinner Attended</small>
+                        </div>
+                        <div class="col-md-4">
+                            <span class="meal-badge empty me-2"><i class="fas fa-times"></i></span>
+                            <small>Not Attended</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- List View -->
+    <div class="tab-pane fade" id="list-view" role="tabpanel">
+        <!-- Filters -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body">
+                <form method="GET" class="row g-3">
+                    <input type="hidden" name="view" value="list">
+                    <div class="col-md-5">
+                        <label class="form-label fw-semibold">Date Range</label>
+                        <select name="dateRange" class="form-select" onchange="this.form.submit()">
+                            <option value="thisMonth" {% if date_range == 'thisMonth' %}selected{% endif %}>This Month</option>
+                            <option value="lastMonth" {% if date_range == 'lastMonth' %}selected{% endif %}>Last Month</option>
+                            <option value="thisWeek" {% if date_range == 'thisWeek' %}selected{% endif %}>This Week</option>
+                            <option value="all" {% if date_range == 'all' %}selected{% endif %}>All Time</option>
+                        </select>
+                    </div>
+                    <div class="col-md-5">
+                        <label class="form-label fw-semibold">Meal Type</label>
+                        <select name="mealType" class="form-select" onchange="this.form.submit()">
+                            <option value="all" {% if meal_type == 'all' %}selected{% endif %}>All Meals</option>
+                            <option value="lunch" {% if meal_type == 'lunch' %}selected{% endif %}>Lunch Only</option>
+                            <option value="dinner" {% if meal_type == 'dinner' %}selected{% endif %}>Dinner Only</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">&nbsp;</label>
+                        <button type="submit" class="btn w-100" style="background: linear-gradient(135deg, #14b8a6, #0d9488); color: white;">
+                            <i class="fas fa-filter me-1"></i>Apply
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Attendance Records -->
+        <div class="card border-0 shadow-sm">
+            <div class="card-header text-white" style="background: linear-gradient(135deg, #14b8a6, #06b6d4);">
+                <h5 class="mb-0"><i class="fas fa-list me-2"></i>Attendance Records</h5>
+            </div>
+            <div class="card-body">
+                {% if attendance_records %}
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead>
+                                <tr>
+                                    <th><i class="fas fa-calendar me-1"></i>Date</th>
+                                    <th><i class="fas fa-utensils me-1"></i>Meal Type</th>
+                                    <th><i class="fas fa-clock me-1"></i>Time</th>
+                                    <th><i class="fas fa-qrcode me-1"></i>Method</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for record in attendance_records %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ record.date.strftime('%b %d, %Y') }}</strong>
+                                        <br>
+                                        <small class="text-muted">{{ record.date.strftime('%A') }}</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{ 'warning' if record.meal_type == 'lunch' else 'primary' }} fs-6">
+                                            <i class="fas fa-{{ 'sun' if record.meal_type == 'lunch' else 'moon' }} me-1"></i>
+                                            {{ record.meal_type|capitalize }}
+                                        </span>
+                                    </td>
+                                    <td>{{ record.timestamp.strftime('%I:%M %p') if record.timestamp else '-' }}</td>
+                                    <td>
+                                        <span class="badge bg-secondary">
+                                            <i class="fas fa-{{ 'qrcode' if record.method == 'qr_scan' else 'hand-pointer' }} me-1"></i>
+                                            {{ record.method|replace('_', ' ')|title }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-5 text-muted">
+                        <i class="fas fa-clipboard-list fa-4x mb-3 opacity-50"></i>
+                        <h5>No Attendance Records Found</h5>
+                        <p>No attendance records for the selected filters.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- QR Scanner Modal -->
+<div class="modal fade" id="qrScannerModal" tabindex="-1" aria-labelledby="qrScannerModalLabel" aria-hidden="true" data-bs-backdrop="false" data-bs-keyboard="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header" style="background: linear-gradient(135deg, #14b8a6, #06b6d4); color: white;">
+                <h5 class="modal-title" id="qrScannerModalLabel">
+                    <i class="fas fa-qrcode me-2"></i>Scan QR Code for Attendance
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" style="background: white;">
+                <div class="text-center mb-3">
+                    <p class="text-muted">Enter the QR code URL or scan directly:</p>
+                </div>
+                
+                <!-- Manual URL Input -->
+                <div class="mb-3">
+                    <label for="qrUrl" class="form-label fw-semibold">QR Code URL</label>
+                    <input type="url" class="form-control" id="qrUrl" placeholder="Paste QR code URL here..." autocomplete="off">
+                    <small class="text-muted">Example: http://127.0.0.1:5000/scan/abc123...</small>
+                </div>
+                
+                <div class="d-grid gap-2">
+                    <button type="button" class="btn btn-primary" onclick="scanQRCode()">
+                        <i class="fas fa-arrow-right me-2"></i>Go to Scan Page
+                    </button>
+                </div>
+                
+                <hr class="my-4">
+                <!-- Camera Scanner -->
+                <div class="mb-3">
+                    <label class="form-label fw-semibold"><i class="fas fa-camera me-2"></i>Camera Scanner</label>
+                    <div id="qr-reader" style="width: 100%; max-width: 420px; margin: 0 auto;"></div>
+                    <div class="d-flex justify-content-center gap-2 mt-2">
+                        <button type="button" class="btn btn-outline-primary btn-sm" id="startCameraBtn"><i class="fas fa-camera me-1"></i>Start Camera</button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" id="stopCameraBtn" disabled><i class="fas fa-stop me-1"></i>Stop</button>
+                    </div>
+                    <div id="qrScanMessage" class="text-center small text-muted mt-2"></div>
+                </div>
+
+                <div class="alert alert-info mb-0">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>How to use:</strong>
+                    <ol class="mb-0 mt-2">
+                        <li>Ask admin to generate QR code for the current meal</li>
+                        <li>Scan the QR using your camera or copy the QR URL</li>
+                        <li>Mark your attendance on the scan page</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/html5-qrcode" defer></script>
+<script>
+// Function to scan QR code (global scope)
+function scanQRCode() {
+    const qrUrl = document.getElementById('qrUrl').value.trim();
+    
+    if (!qrUrl) {
+        alert('Please enter a QR code URL');
+        return;
+    }
+    
+    // Validate URL
+    if (!qrUrl.includes('/scan/')) {
+        alert('Invalid QR code URL. Please check and try again.');
+        return;
+    }
+    
+    // Redirect to scan page
+    window.location.href = qrUrl;
+}
+
+// Setup event listeners when modal is shown
+document.addEventListener('DOMContentLoaded', function() {
+    const qrModal = document.getElementById('qrScannerModal');
+    if (qrModal) {
+        qrModal.addEventListener('shown.bs.modal', function () {
+            const qrUrlInput = document.getElementById('qrUrl');
+            if (qrUrlInput) {
+                qrUrlInput.focus();
+                
+                // Remove existing listener if any
+                qrUrlInput.removeEventListener('keypress', handleEnterKey);
+                // Add keypress listener
+                qrUrlInput.addEventListener('keypress', handleEnterKey);
+            }
+        });
+
+        // Stop camera when modal hides
+        qrModal.addEventListener('hidden.bs.modal', function () {
+            stopQrScanner();
+        });
+    }
+    setupQrScanner();
+});
+
+function handleEnterKey(e) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        scanQRCode();
+    }
+}
+
+// Camera QR scanner setup
+let qrScannerInstance = null;
+let qrScannerStarted = false;
+
+function setupQrScanner() {
+    const startBtn = document.getElementById('startCameraBtn');
+    const stopBtn = document.getElementById('stopCameraBtn');
+    const msg = document.getElementById('qrScanMessage');
+
+    if (!startBtn || !stopBtn) return;
+
+    startBtn.addEventListener('click', async () => {
+        try {
+            if (qrScannerStarted) return;
+            startBtn.disabled = true;
+            startBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Starting...';
+            msg.textContent = 'Allow camera permission to start scanning...';
+
+            // Ensure library loaded
+            if (typeof Html5QrcodeScanner === 'undefined') {
+                msg.textContent = 'Loading scanner... please wait';
+                await new Promise(r => setTimeout(r, 500));
+            }
+
+            qrScannerInstance = new Html5QrcodeScanner('qr-reader', {
+                fps: 10,
+                qrbox: { width: 250, height: 250 },
+                aspectRatio: /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ? 1.0 : 1.7778,
+                showTorchButtonIfSupported: true,
+                showZoomSliderIfSupported: true
+            }, false);
+
+            qrScannerInstance.render(onQrSuccess, onQrError);
+            qrScannerStarted = true;
+            msg.textContent = 'Scanner active. Point the camera at the QR code.';
+            stopBtn.disabled = false;
+            startBtn.innerHTML = '<i class="fas fa-camera me-1"></i>Camera Active';
+        } catch (e) {
+            console.error(e);
+            msg.textContent = 'Failed to start camera. Check permissions or use URL input.';
+            startBtn.disabled = false;
+            startBtn.innerHTML = '<i class="fas fa-camera me-1"></i>Start Camera';
+        }
+    });
+
+    stopBtn.addEventListener('click', () => {
+        stopQrScanner();
+    });
+}
+
+function stopQrScanner() {
+    const startBtn = document.getElementById('startCameraBtn');
+    const stopBtn = document.getElementById('stopCameraBtn');
+    const msg = document.getElementById('qrScanMessage');
+
+    if (qrScannerInstance) {
+        try {
+            qrScannerInstance.clear();
+        } catch {}
+        qrScannerInstance = null;
+    }
+    qrScannerStarted = false;
+    if (stopBtn) stopBtn.disabled = true;
+    if (startBtn) {
+        startBtn.disabled = false;
+        startBtn.innerHTML = '<i class="fas fa-camera me-1"></i>Start Camera';
+    }
+    if (msg) msg.textContent = '';
+}
+
+function onQrSuccess(decodedText) {
+    const msg = document.getElementById('qrScanMessage');
+    try {
+        // We expect the admin QR to contain a full scan URL like http://.../scan/<token>
+        if (typeof decodedText === 'string' && decodedText.includes('/scan/')) {
+            if (msg) msg.textContent = 'QR detected. Redirecting to scan page...';
+            stopQrScanner();
+            window.location.href = decodedText;
+            return;
+        }
+        // If it contains only token-like content, try to form the URL
+        if (typeof decodedText === 'string' && decodedText.length > 20 && !decodedText.startsWith('http')) {
+            const possible = `${window.location.origin}/scan/${decodedText}`;
+            if (msg) msg.textContent = 'Interpreting QR as token. Redirecting...';
+            stopQrScanner();
+            window.location.href = possible;
+            return;
+        }
+        if (msg) msg.textContent = 'Unrecognized QR content. Please try again or use the URL input.';
+    } catch (e) {
+        console.error('QR parse error', e);
+        if (msg) msg.textContent = 'Error reading QR. Please try again.';
+    }
+}
+
+function onQrError(errorMessage) {
+    // Suppress noisy messages; optionally show rare errors
+    // console.debug('QR scan error', errorMessage);
+}
+</script>
+{% endblock %}

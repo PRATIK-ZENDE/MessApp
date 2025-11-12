@@ -1,0 +1,249 @@
+{% extends "student_base.html" %}
+
+{% block title %}Dashboard - Student Portal{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm" style="background: linear-gradient(135deg, rgba(20, 184, 166, 0.1), rgba(6, 182, 212, 0.1));">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h4 class="mb-1">
+                            <i class="fas fa-hand-wave text-warning me-2"></i>
+                            Welcome, <span class="text-primary">{{ student.name }}</span>!
+                        </h4>
+                        <p class="text-muted mb-0">
+                            <i class="fas fa-id-card me-1"></i>{{ student.roll_no }}
+                        </p>
+                    </div>
+                    <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                        <a href="{{ url_for('student_profile') }}" class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-user-edit me-1"></i>Edit Profile
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="row g-4 mb-4">
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center" style="background: linear-gradient(135deg, rgba(20, 184, 166, 0.05), rgba(20, 184, 166, 0.02));">
+                <div class="icon-circle mb-3 mx-auto" style="background: linear-gradient(135deg, #14b8a6, #0d9488); width: 70px; height: 70px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                    <i class="fas fa-utensils fa-2x text-white"></i>
+                </div>
+                <h5 class="fw-bold mb-2">Total Meals</h5>
+                <h2 class="mb-1" style="color: #14b8a6;">{{ total_attendance }}</h2>
+                <p class="text-muted small mb-0">This Month</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center" style="background: linear-gradient(135deg, rgba(6, 182, 212, 0.05), rgba(6, 182, 212, 0.02));">
+                <div class="icon-circle mb-3 mx-auto" style="background: linear-gradient(135deg, #06b6d4, #0891b2); width: 70px; height: 70px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                    <i class="fas fa-sun fa-2x text-white"></i>
+                </div>
+                <h5 class="fw-bold mb-2">Lunch</h5>
+                <h2 class="mb-1" style="color: #06b6d4;">{{ lunch_count }}</h2>
+                <p class="text-muted small mb-0">Meals This Month</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center" style="background: linear-gradient(135deg, rgba(2, 132, 199, 0.05), rgba(2, 132, 199, 0.02));">
+                <div class="icon-circle mb-3 mx-auto" style="background: linear-gradient(135deg, #0284c7, #0369a1); width: 70px; height: 70px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                    <i class="fas fa-moon fa-2x text-white"></i>
+                </div>
+                <h5 class="fw-bold mb-2">Dinner</h5>
+                <h2 class="mb-1" style="color: #0284c7;">{{ dinner_count }}</h2>
+                <p class="text-muted small mb-0">Meals This Month</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Today's Attendance & Current Bill -->
+<div class="row g-4 mb-4">
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header text-white" style="background: linear-gradient(135deg, #14b8a6, #0d9488);">
+                <h5 class="mb-0"><i class="fas fa-calendar-day me-2"></i>Today's Attendance</h5>
+            </div>
+            <div class="card-body">
+                {% if today_attendance %}
+                    <div class="list-group list-group-flush">
+                        {% for record in today_attendance %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center border-0">
+                            <span>
+                                <i class="fas fa-{{ 'sun' if record.meal_type == 'lunch' else 'moon' }} me-2 text-{{ 'warning' if record.meal_type == 'lunch' else 'primary' }}"></i>
+                                <strong>{{ record.meal_type|capitalize }}</strong>
+                            </span>
+                            <span class="badge bg-success">Marked</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-4 text-muted">
+                        <i class="fas fa-info-circle fa-3x mb-3 opacity-50"></i>
+                        <p class="mb-0">No attendance marked today</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header text-white" style="background: linear-gradient(135deg, #06b6d4, #0891b2);">
+                <h5 class="mb-0"><i class="fas fa-file-invoice-dollar me-2"></i>Current Month Bill</h5>
+            </div>
+            <div class="card-body">
+                {% if current_bill %}
+                    <div class="text-center py-3">
+                        {% set status = current_bill.payment_status %}
+                        <h1 class="display-4 mb-2" style="color: #06b6d4;">₹{{ "%.2f"|format(current_bill.amount) }}</h1>
+                        {% set status_badge = 'warning text-dark' %}
+                        {% set status_label = 'Pending Payment' %}
+                        {% if status == 'paid' %}
+                            {% set status_badge = 'success' %}
+                            {% set status_label = 'Paid' %}
+                        {% elif status == 'pending_verification' %}
+                            {% set status_badge = 'info text-dark' %}
+                            {% set status_label = 'Awaiting Verification' %}
+                        {% elif status == 'rejected' %}
+                            {% set status_badge = 'danger' %}
+                            {% set status_label = 'Rejected' %}
+                        {% endif %}
+                        <p class="mb-2">
+                            <span class="badge bg-{{ status_badge }} fs-6">
+                                {{ status_label }}
+                            </span>
+                        </p>
+                        <p class="text-muted mb-0">
+                            <i class="fas fa-utensils me-1"></i>{{ current_bill.days_present }} meals • 
+                            <i class="fas fa-coins ms-2 me-1"></i>₹{{ "%.2f"|format(current_bill.daily_rate) }}/meal
+                        </p>
+                        {% set latest_payment = current_bill.latest_payment %}
+                        {% if status == 'pending' %}
+                        <div class="alert alert-warning d-inline-flex align-items-center gap-2 py-2 px-3 mt-3">
+                            <i class="fas fa-info-circle"></i>
+                            <span>Your payment is due. Use the bills page to submit a transaction reference.</span>
+                        </div>
+                        {% elif status == 'pending_verification' and latest_payment %}
+                        <div class="alert alert-info d-inline-flex align-items-center gap-2 py-2 px-3 mt-3">
+                            <i class="fas fa-hourglass-half"></i>
+                            <span>Payment submitted on {{ latest_payment.created_at.strftime('%b %d, %Y %I:%M %p') if latest_payment.created_at else 'N/A' }}. Awaiting admin confirmation.</span>
+                        </div>
+                        {% elif status == 'rejected' %}
+                        <div class="alert alert-danger d-inline-flex align-items-center gap-2 py-2 px-3 mt-3">
+                            <i class="fas fa-times-circle"></i>
+                            <span>Your last payment was rejected. Please resubmit the correct details.</span>
+                        </div>
+                        {% endif %}
+                        <a href="{{ url_for('student_bills') }}" class="btn btn-sm btn-outline-primary mt-3">
+                            <i class="fas fa-wallet me-1"></i>Manage Bills
+                        </a>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4 text-muted">
+                        <i class="fas fa-receipt fa-3x mb-3 opacity-50"></i>
+                        <p class="mb-0">No bill generated yet</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if recent_payments %}
+<div class="row g-4 mb-4">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header text-white" style="background: linear-gradient(135deg, #0ea5e9, #0284c7);">
+                <h5 class="mb-0"><i class="fas fa-money-bill-wave me-2"></i>Recent Payment Activity</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush">
+                    {% for payment in recent_payments %}
+                    <div class="list-group-item d-flex justify-content-between align-items-start flex-wrap gap-2">
+                        <div>
+                            <div class="fw-semibold">₹{{ "%.2f"|format(payment.amount) }} · {{ payment.method|default('upi')|replace('_', ' ')|title }}</div>
+                            <div class="small text-muted">Submitted: {{ payment.created_at.strftime('%b %d, %Y %I:%M %p') if payment.created_at else 'N/A' }}</div>
+                            <div class="small text-muted">Reference: {{ payment.reference or 'N/A' }}</div>
+                        </div>
+                        <span class="badge bg-{{ 'success' if payment.status == 'verified' else 'warning text-dark' if payment.status == 'submitted' else 'danger' }} align-self-center">
+                            <i class="fas fa-{{ 'check-circle' if payment.status == 'verified' else 'hourglass-half' if payment.status == 'submitted' else 'times-circle' }} me-1"></i>
+                            {{ payment.status|replace('_', ' ')|title }}
+                        </span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Recent Meal History -->
+<div class="row">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header text-white" style="background: linear-gradient(135deg, #0284c7, #0369a1);">
+                <h5 class="mb-0"><i class="fas fa-history me-2"></i>Recent Meal History (Last 7 Days)</h5>
+            </div>
+            <div class="card-body">
+                {% if recent_meals %}
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Meal</th>
+                                    <th>Time</th>
+                                    <th>Method</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for meal in recent_meals %}
+                                <tr>
+                                    <td>
+                                        <i class="fas fa-calendar me-2 text-muted"></i>
+                                        {{ meal.date.strftime('%b %d, %Y') }}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{ 'warning' if meal.meal_type == 'lunch' else 'primary' }}">
+                                            <i class="fas fa-{{ 'sun' if meal.meal_type == 'lunch' else 'moon' }} me-1"></i>
+                                            {{ meal.meal_type|capitalize }}
+                                        </span>
+                                    </td>
+                                    <td>{{ meal.timestamp.strftime('%I:%M %p') if meal.timestamp else '-' }}</td>
+                                    <td>
+                                        <span class="badge bg-secondary">
+                                            <i class="fas fa-{{ 'qrcode' if meal.method == 'qr_scan' else 'hand-pointer' }} me-1"></i>
+                                            {{ meal.method|replace('_', ' ')|title }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4 text-muted">
+                        <i class="fas fa-history fa-3x mb-3 opacity-50"></i>
+                        <p class="mb-0">No recent meal history</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
