@@ -40,6 +40,11 @@ if database_uri.startswith('postgresql://'):
 
 app.config['SQLALCHEMY_DATABASE_URI'] = database_uri
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+    'connect_args': {
+        'options': '-c client_encoding=utf8'
+    } if database_uri.startswith('postgresql') else {}
+}
 app.config['WTF_CSRF_ENABLED'] = True  # Enable CSRF protection
 app.config['WTF_CSRF_SECRET_KEY'] = os.getenv('WTF_CSRF_SECRET_KEY', 'dev-csrf-key')
 
