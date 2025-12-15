@@ -34,6 +34,10 @@ if database_uri.startswith('sqlite:///') and not database_uri.startswith('sqlite
         absolute_path = os.path.join(app.root_path, relative_path)
         database_uri = 'sqlite:///' + os.path.normpath(absolute_path).replace('\\', '/')
 
+# If using PostgreSQL, ensure we use psycopg (not psycopg2)
+if database_uri.startswith('postgresql://'):
+    database_uri = database_uri.replace('postgresql://', 'postgresql+psycopg://', 1)
+
 app.config['SQLALCHEMY_DATABASE_URI'] = database_uri
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['WTF_CSRF_ENABLED'] = True  # Enable CSRF protection
