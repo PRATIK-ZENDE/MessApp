@@ -2007,6 +2007,13 @@ def create_app():
     init_db()
     return app
 
+# Auto-initialize database when module is imported (for Gunicorn)
+print("Auto-initializing database...")
+try:
+    init_db()
+    print("Database auto-initialization complete.")
+except Exception as e:
+    print(f"Database auto-initialization warning: {e}")
 
 if __name__ == '__main__':
     print("Initializing database...")
