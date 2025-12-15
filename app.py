@@ -42,6 +42,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = database_uri
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
     'connect_args': {
+        'hostaddr': '13.200.110.68',  # Supabase IPv4 address for ap-south-1 pooler
         'options': '-c client_encoding=utf8'
     } if database_uri.startswith('postgresql') else {}
 }
