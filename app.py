@@ -1158,7 +1158,7 @@ def reset_student_password(student_id):
 @login_required
 def attendance():
     if request.method == 'POST':
-        student_id = request.form.get('student_id')
+        student_id = int(request.form.get('student_id'))  # Convert to integer
         attendance_date = request.form.get('date')
         meal_types = request.form.getlist('meal_type')  # Get all selected meal types
         
@@ -1244,11 +1244,11 @@ def mark_attendance():
     """Mark student attendance"""
     if request.is_json:
         data = request.get_json()
-        student_id = data.get('student_id')
+        student_id = int(data.get('student_id'))
         method = data.get('method', 'manual')
         meal_type = data.get('meal_type') or get_current_meal_type()
     else:
-        student_id = request.form.get('student_id')
+        student_id = int(request.form.get('student_id'))
         method = request.form.get('method', 'manual')
         meal_type = request.form.get('meal_type') or get_current_meal_type()
     
@@ -1477,7 +1477,7 @@ def submit_attendance(token):
     if not session or not session.is_valid():
         return jsonify({'success': False, 'message': 'Session expired or invalid'})
     
-    student_id = request.form.get('student_id')
+    student_id = int(request.form.get('student_id'))
     
     if not student_id:
         return jsonify({'success': False, 'message': 'Please select your name'})
@@ -1688,7 +1688,7 @@ def billing():
 def generate_bill():
     try:
         # Validate input data
-        student_id = request.form.get('student_id')
+        student_id = int(request.form.get('student_id'))
         month = request.form.get('month')
         year = request.form.get('year')
         
@@ -1697,7 +1697,6 @@ def generate_bill():
                 'success': False,
                 'message': 'Please provide all required fields'
             }), 400
-            
         try:
             student_id = int(student_id)
             month = int(month)
