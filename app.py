@@ -959,24 +959,36 @@ def settings():
             daily_rate = request.form.get('daily_meal_rate')
             if daily_rate:
                 Settings.set_value('daily_meal_rate', daily_rate, 'Daily rate for 2 meals')
+                app.logger.info(f'Updated daily_meal_rate to: {daily_rate}')
             
             # Update UPI payment settings
-            upi_id = request.form.get('upi_id')
+            upi_id = request.form.get('upi_id', '').strip()
             if upi_id:
                 Settings.set_value('upi_id', upi_id, 'UPI ID for receiving payments')
+                app.logger.info(f'Updated upi_id to: {upi_id}')
             
-            upi_name = request.form.get('upi_name')
+            upi_name = request.form.get('upi_name', '').strip()
             if upi_name:
                 Settings.set_value('upi_name', upi_name, 'Business name shown in UPI apps')
+                app.logger.info(f'Updated upi_name to: {upi_name}')
+            
+            # Verify saved values
+            saved_upi_id = Settings.get_value('upi_id')
+            saved_upi_name = Settings.get_value('upi_name')
+            app.logger.info(f'Verified saved values - UPI ID: {saved_upi_id}, UPI Name: {saved_upi_name}')
             
             flash('Settings updated successfully!', 'success')
         except Exception as e:
+            app.logger.error(f'Error updating settings: {str(e)}')
             flash(f'Error updating settings: {str(e)}', 'error')
         return redirect(url_for('settings'))
     
-    # GET request - show current settings from Mess
+    # GET request - show current settings
     upi_id_val, upi_name_val = get_effective_upi()
     daily_rate = get_effective_daily_rate()
+    
+    # Log current settings for debugging
+    app.logger.info(f'Loading settings - UPI ID: {upi_id_val}, UPI Name: {upi_name_val}, Daily Rate: {daily_rate}')
     
     return render_template('settings.html',
         daily_meal_rate=str(daily_rate),
