@@ -517,19 +517,46 @@ function tryOpenUpiApp(upiLink) {
 }
 
 function copyUpiId(upiId) {
+    // Prevent double-click issues with debouncing
+    const btn = event.target.closest('button');
+    if (btn && btn.disabled) return; // Already copying
+    
+    if (btn) {
+        btn.disabled = true;
+        const originalHTML = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Copying...';
+        
+        // Re-enable after 2 seconds
+        setTimeout(() => {
+            btn.disabled = false;
+            btn.innerHTML = originalHTML;
+        }, 2000);
+    }
+    
     // Try using Clipboard API first
     if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(upiId)
             .then(() => {
-                setPaymentFeedback(`UPI ID copied: ${upiId} - Open your UPI app and paste to pay`, 'success');
+                setPaymentFeedback(`✅ UPI ID copied: ${upiId} - Now open your UPI app and paste to pay`, 'success');
+                if (btn) {
+                    btn.innerHTML = '<i class="fas fa-check me-2"></i>Copied!';
+                }
             })
             .catch(() => {
                 // Fallback for older browsers
                 fallbackCopy(upiId);
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = originalHTML;
+                }
             });
     } else {
         // Fallback for browsers without Clipboard API
         fallbackCopy(upiId);
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = originalHTML;
+        }
     }
 }
 
@@ -545,9 +572,9 @@ function fallbackCopy(text) {
     
     try {
         document.execCommand('copy');
-        setPaymentFeedback(`UPI ID copied: ${text} - Open your UPI app and paste to pay`, 'success');
+        setPaymentFeedback(`✅ UPI ID copied: ${text} - Now open your UPI app and paste to pay`, 'success');
     } catch (e) {
-        setPaymentFeedback('Unable to copy. Please manually copy: ' + text, 'warning');
+        setPaymentFeedback('❌ Unable to copy. Please manually copy: ' + text, 'warning');
     }
     
     document.body.removeChild(textarea);
