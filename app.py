@@ -983,17 +983,19 @@ def settings():
             flash(f'Error updating settings: {str(e)}', 'error')
         return redirect(url_for('settings'))
     
-    # GET request - show current settings
-    upi_id_val, upi_name_val = get_effective_upi()
-    daily_rate = get_effective_daily_rate()
+    # GET request - show current settings directly from Settings table
+    # Don't use get_effective_upi() here to avoid confusion with Mess settings
+    upi_id_val = Settings.get_value('upi_id', app.config.get('UPI_ID', ''))
+    upi_name_val = Settings.get_value('upi_name', app.config.get('UPI_NAME', ''))
+    daily_rate_val = Settings.get_value('daily_meal_rate', '100.0')
     
     # Log current settings for debugging
-    app.logger.info(f'Loading settings - UPI ID: {upi_id_val}, UPI Name: {upi_name_val}, Daily Rate: {daily_rate}')
+    app.logger.info(f'Loading settings - UPI ID: {upi_id_val}, UPI Name: {upi_name_val}, Daily Rate: {daily_rate_val}')
     
     return render_template('settings.html',
-        daily_meal_rate=str(daily_rate),
-        upi_id=upi_id_val or app.config.get('UPI_ID', 'merchant@upi'),
-        upi_name=upi_name_val or app.config.get('UPI_NAME', 'Mess Management')
+        daily_meal_rate=str(daily_rate_val),
+        upi_id=upi_id_val,
+        upi_name=upi_name_val
     )
 
 # Student Management Routes
