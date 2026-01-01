@@ -1367,6 +1367,8 @@ body::before {
     /* Modal adjustments */
     .modal-body {
         padding: 1rem;
+        max-height: 70vh;
+        overflow-y: auto;
     }
     
     .modal-footer {
@@ -1376,6 +1378,22 @@ body::before {
     
     .modal-footer .btn {
         width: 100%;
+    }
+    
+    /* Fix modal scrolling and interaction */
+    .modal-dialog-scrollable .modal-body {
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    /* Ensure modal is interactive */
+    .modal {
+        overflow-y: auto !important;
+    }
+    
+    .modal-content {
+        max-height: 90vh;
+        overflow: visible;
     }
 }
 
@@ -1387,9 +1405,40 @@ body::before {
     }
     
     .modal-dialog {
-        max-height: 90vh;
+        max-height: 85vh;
+        margin: 0.5rem;
+    }
+    
+    .modal-body {
+        max-height: 60vh;
         overflow-y: auto;
     }
+}
+
+/* Fix modal backdrop issues on all devices */
+.modal-backdrop {
+    background-color: rgba(0, 0, 0, 0.5);
+    pointer-events: none; /* Allow clicks through backdrop */
+}
+
+.modal-backdrop.show {
+    opacity: 0.5;
+}
+
+/* Ensure modal is clickable */
+.modal.show {
+    pointer-events: auto;
+}
+
+.modal-dialog {
+    pointer-events: all;
+}
+
+/* Fix body scroll lock when modal is open */
+body.modal-open {
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
 }
 
 /* Touch device optimizations */
@@ -1418,6 +1467,12 @@ body::before {
     
     .btn:hover {
         transform: none;
+    }
+    
+    /* Enable momentum scrolling on modals */
+    .modal-body {
+        -webkit-overflow-scrolling: touch;
+        overflow-y: auto;
     }
 }
 
