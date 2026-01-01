@@ -40,12 +40,19 @@ if database_uri.startswith('postgresql://'):
 
 app.config['SQLALCHEMY_DATABASE_URI'] = database_uri
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
-    'connect_args': {
-        'hostaddr': '13.200.110.68',  # Supabase IPv4 address for ap-south-1 pooler
-        'options': '-c client_encoding=utf8'
-    } if database_uri.startswith('postgresql') else {}
-}
+
+# PostgreSQL connection options
+if database_uri.startswith('postgresql'):
+    connect_args = {'options': '-c client_encoding=utf8'}
+    
+    # Only use hostaddr if explicitly set in environment (for IPv4-only networks)
+    if os.getenv('DATABASE_HOSTADDR'):
+        connect_args['hostaddr'] = os.getenv('DATABASE_HOSTADDR')
+    
+    app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {'connect_args': connect_args}
+else:
+    app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {}
+
 app.config['WTF_CSRF_ENABLED'] = True  # Enable CSRF protection
 app.config['WTF_CSRF_SECRET_KEY'] = os.getenv('WTF_CSRF_SECRET_KEY', 'dev-csrf-key')
 
@@ -2024,4 +2031,6 @@ if __name__ == '__main__':
     print("Initializing database...")
     init_db()
     print("Starting Flask application...")
-    app.run(debug=True)
+    # Use debug mode only in development, not in production
+    debug_mode = os.getenv('FLASK_ENV') == 'development'
+    app.run(debug=debug_mode)
