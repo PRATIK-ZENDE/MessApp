@@ -230,6 +230,26 @@ body::before {
     background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba(255,255,255,0.95)' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2.5' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
 }
 
+/* Additional specificity for student portal navbar */
+.student-portal .navbar-dark .navbar-toggler,
+.student-nav .navbar-toggler {
+    border-color: rgba(255, 255, 255, 0.7) !important;
+    background-color: transparent;
+}
+
+.student-portal .navbar-dark .navbar-toggler:hover,
+.student-nav .navbar-toggler:hover {
+    background-color: rgba(255, 255, 255, 0.15) !important;
+    border-color: white !important;
+}
+
+.student-portal .navbar-dark .navbar-toggler-icon,
+.student-nav .navbar-toggler-icon {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='%23ffffff' stroke-linecap='round' stroke-miterlimit='10' stroke-width='3' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e") !important;
+    width: 1.5em;
+    height: 1.5em;
+}
+
 /* Card Styles */
 .card {
     border: none;
