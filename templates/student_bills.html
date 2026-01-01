@@ -402,8 +402,11 @@ async function initiateUpiPayment() {
                     <i class="fas fa-qrcode me-2"></i>
                     <strong>Recommended:</strong> Scan the QR code above with your UPI app
                 </div>
-                <button class="btn btn-outline-primary btn-sm w-100" onclick="tryOpenUpiApp('${upiLink}')">
-                    <i class="fas fa-external-link-alt me-2"></i>Or Try Opening UPI App
+                <button class="btn btn-outline-primary btn-sm w-100 mb-2" onclick="tryOpenUpiApp('${upiLink}')">
+                    <i class="fas fa-external-link-alt me-2"></i>Try Opening UPI App
+                </button>
+                <button class="btn btn-outline-secondary btn-sm w-100" onclick="copyUpiId('${data.upi_id}')">
+                    <i class="fas fa-copy me-2"></i>Copy UPI ID
                 </button>
                 <p class="small text-muted mt-2">UPI ID: <strong>${data.upi_id}</strong></p>
                 <p class="small text-muted">Transaction Ref: <strong>${data.transaction_ref}</strong></p>
@@ -426,15 +429,82 @@ async function initiateUpiPayment() {
 }
 
 function tryOpenUpiApp(upiLink) {
-    // Try to open UPI app - may be blocked by browser
-    try {
-        window.location.href = upiLink;
-        setTimeout(() => {
-            setPaymentFeedback('If UPI app didn\'t open, please scan the QR code above', 'warning');
-        }, 1000);
-    } catch (e) {
-        setPaymentFeedback('Unable to open UPI app. Please scan the QR code above', 'warning');
+    // Use Android Intent for better compatibility
+    const isAndroid = /Android/i.test(navigator.userAgent);
+    
+    if (isAndroid) {
+        // Extract UPI parameters from link
+        const url = new URL(upiLink);
+        const params = new URLSearchParams(url.search);
+        
+        // Try multiple UPI apps in order of popularity
+        const apps = [
+            { name: 'Google Pay', package: 'com.google.android.apps.nbu.paisa.user' },
+            { name: 'PhonePe', package: 'com.phonepe.app' },
+            { name: 'Paytm', package: 'net.one97.paytm' },
+            { name: 'BHIM', package: 'in.org.npci.upiapp' }
+        ];
+        
+        // Build intent URL for Google Pay (most popular)
+        const intentUrl = `intent://pay?${url.search.substring(1)}#Intent;scheme=upi;package=${apps[0].package};end`;
+        
+        try {
+            window.location.href = intentUrl;
+            setTimeout(() => {
+                // Fallback to regular UPI link if intent didn't work
+                setPaymentFeedback('If app didn\'t open, try scanning the QR code or use a different browser', 'warning');
+            }, 2000);
+        } catch (e) {
+            setPaymentFeedback('Unable to open UPI app. Please scan the QR code above', 'warning');
+        }
+    } else {
+        // iOS or other - use standard UPI link
+        try {
+            window.location.href = upiLink;
+            setTimeout(() => {
+                setPaymentFeedback('If UPI app didn\'t open, please scan the QR code above', 'warning');
+            }, 1000);
+        } catch (e) {
+            setPaymentFeedback('Unable to open UPI app. Please scan the QR code above', 'warning');
+        }
     }
+}
+
+function copyUpiId(upiId) {
+    // Try using Clipboard API first
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(upiId)
+            .then(() => {
+                setPaymentFeedback(`UPI ID copied: ${upiId} - Open your UPI app and paste to pay`, 'success');
+            })
+            .catch(() => {
+                // Fallback for older browsers
+                fallbackCopy(upiId);
+            });
+    } else {
+        // Fallback for browsers without Clipboard API
+        fallbackCopy(upiId);
+    }
+}
+
+function fallbackCopy(text) {
+    // Create temporary textarea
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.focus();
+    textarea.select();
+    
+    try {
+        document.execCommand('copy');
+        setPaymentFeedback(`UPI ID copied: ${text} - Open your UPI app and paste to pay`, 'success');
+    } catch (e) {
+        setPaymentFeedback('Unable to copy. Please manually copy: ' + text, 'warning');
+    }
+    
+    document.body.removeChild(textarea);
 }
 
 function viewPaymentHistory(button) {
