@@ -362,7 +362,7 @@ async function initiateUpiPayment() {
     
     const payBtn = document.getElementById('payWithUpiBtn');
     payBtn.disabled = true;
-    payBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Generating UPI link...';
+    payBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Generating QR Code...';
     
     try {
         const response = await fetch(`/student/bills/${activeBillId}/generate-upi-link`, {
@@ -376,7 +376,7 @@ async function initiateUpiPayment() {
             throw new Error(data.message || 'Failed to generate UPI link');
         }
         
-        // Display QR code
+        // Display QR code (primary method)
         document.getElementById('qrCodeImage').src = data.qr_code;
         document.getElementById('upiQrCode').classList.remove('d-none');
         
@@ -385,16 +385,32 @@ async function initiateUpiPayment() {
         document.getElementById('displayTxnRef').textContent = data.transaction_ref;
         document.getElementById('paymentReference').placeholder = data.transaction_ref;
         
-        // Try to open UPI app (works on mobile)
         const upiLink = data.upi_link;
         const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
         
+        // Hide the pay button, show QR code and optional deep link button
+        payBtn.classList.add('d-none');
+        
         if (isMobile) {
-            // Open UPI app on mobile
-            window.location.href = upiLink;
-            document.getElementById('upiDetails').classList.remove('d-none');
+            // On mobile: Show QR code + optional "Open UPI App" button
+            setPaymentFeedback('Scan QR code with any UPI app, or try opening your UPI app directly below', 'info');
+            
+            // Add optional deep link button
+            const upiDetails = document.getElementById('upiDetails');
+            upiDetails.innerHTML = `
+                <div class="alert alert-info mb-3">
+                    <i class="fas fa-qrcode me-2"></i>
+                    <strong>Recommended:</strong> Scan the QR code above with your UPI app
+                </div>
+                <button class="btn btn-outline-primary btn-sm w-100" onclick="tryOpenUpiApp('${upiLink}')">
+                    <i class="fas fa-external-link-alt me-2"></i>Or Try Opening UPI App
+                </button>
+                <p class="small text-muted mt-2">UPI ID: <strong>${data.upi_id}</strong></p>
+                <p class="small text-muted">Transaction Ref: <strong>${data.transaction_ref}</strong></p>
+            `;
+            upiDetails.classList.remove('d-none');
         } else {
-            // Show QR code on desktop
+            // On desktop: Just show QR code
             setPaymentFeedback('Scan the QR code with your mobile UPI app to complete payment', 'info');
         }
         
@@ -406,6 +422,18 @@ async function initiateUpiPayment() {
         setPaymentFeedback(error.message || 'Unable to generate UPI link', 'danger');
         payBtn.disabled = false;
         payBtn.innerHTML = '<i class="fas fa-qrcode me-2"></i>Pay with UPI';
+    }
+}
+
+function tryOpenUpiApp(upiLink) {
+    // Try to open UPI app - may be blocked by browser
+    try {
+        window.location.href = upiLink;
+        setTimeout(() => {
+            setPaymentFeedback('If UPI app didn\'t open, please scan the QR code above', 'warning');
+        }, 1000);
+    } catch (e) {
+        setPaymentFeedback('Unable to open UPI app. Please scan the QR code above', 'warning');
     }
 }
 
