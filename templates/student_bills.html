@@ -392,24 +392,48 @@ async function initiateUpiPayment() {
         payBtn.classList.add('d-none');
         
         if (isMobile) {
-            // On mobile: Show QR code + optional "Open UPI App" button
-            setPaymentFeedback('Scan QR code with any UPI app, or try opening your UPI app directly below', 'info');
+            // On mobile: Show multiple payment options
+            setPaymentFeedback('Choose any payment method below', 'info');
             
-            // Add optional deep link button
+            // Add multiple payment options
             const upiDetails = document.getElementById('upiDetails');
             upiDetails.innerHTML = `
-                <div class="alert alert-info mb-3">
-                    <i class="fas fa-qrcode me-2"></i>
-                    <strong>Recommended:</strong> Scan the QR code above with your UPI app
+                <div class="card border-success mb-3">
+                    <div class="card-header bg-success text-white">
+                        <i class="fas fa-qrcode me-2"></i><strong>Method 1: Scan QR Code (Recommended)</strong>
+                    </div>
+                    <div class="card-body">
+                        <p class="small mb-0">Open any UPI app and scan the QR code above</p>
+                    </div>
                 </div>
-                <button class="btn btn-outline-primary btn-sm w-100 mb-2" onclick="tryOpenUpiApp('${upiLink}')">
-                    <i class="fas fa-external-link-alt me-2"></i>Try Opening UPI App
-                </button>
-                <button class="btn btn-outline-secondary btn-sm w-100" onclick="copyUpiId('${data.upi_id}')">
-                    <i class="fas fa-copy me-2"></i>Copy UPI ID
-                </button>
-                <p class="small text-muted mt-2">UPI ID: <strong>${data.upi_id}</strong></p>
-                <p class="small text-muted">Transaction Ref: <strong>${data.transaction_ref}</strong></p>
+                
+                <div class="card border-primary mb-3">
+                    <div class="card-header bg-primary text-white">
+                        <i class="fas fa-copy me-2"></i><strong>Method 2: Copy & Paste UPI ID</strong>
+                    </div>
+                    <div class="card-body">
+                        <button class="btn btn-primary btn-sm w-100 mb-2" onclick="copyUpiId('${data.upi_id}')">
+                            <i class="fas fa-copy me-2"></i>Copy UPI ID: ${data.upi_id}
+                        </button>
+                        <p class="small text-muted mb-0">Then open your UPI app and paste to pay</p>
+                    </div>
+                </div>
+                
+                <div class="card border-secondary mb-3">
+                    <div class="card-header bg-secondary text-white">
+                        <i class="fas fa-mobile-alt me-2"></i><strong>Method 3: Auto-Open UPI App (May Not Work)</strong>
+                    </div>
+                    <div class="card-body">
+                        <button class="btn btn-secondary btn-sm w-100 mb-2" onclick="tryOpenUpiApp('${upiLink}')">
+                            <i class="fas fa-external-link-alt me-2"></i>Try Auto-Opening
+                        </button>
+                        <p class="small text-muted mb-0">Some browsers block this feature</p>
+                    </div>
+                </div>
+                
+                <p class="small text-muted mt-3 mb-1"><strong>Payment Details:</strong></p>
+                <p class="small text-muted mb-1">Amount: ₹${data.amount}</p>
+                <p class="small text-muted mb-0">Transaction Ref: ${data.transaction_ref}</p>
             `;
             upiDetails.classList.remove('d-none');
         } else {
@@ -429,45 +453,67 @@ async function initiateUpiPayment() {
 }
 
 function tryOpenUpiApp(upiLink) {
-    // Use Android Intent for better compatibility
     const isAndroid = /Android/i.test(navigator.userAgent);
+    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
     
-    if (isAndroid) {
-        // Extract UPI parameters from link
-        const url = new URL(upiLink);
-        const params = new URLSearchParams(url.search);
-        
-        // Try multiple UPI apps in order of popularity
-        const apps = [
-            { name: 'Google Pay', package: 'com.google.android.apps.nbu.paisa.user' },
-            { name: 'PhonePe', package: 'com.phonepe.app' },
-            { name: 'Paytm', package: 'net.one97.paytm' },
-            { name: 'BHIM', package: 'in.org.npci.upiapp' }
-        ];
-        
-        // Build intent URL for Google Pay (most popular)
-        const intentUrl = `intent://pay?${url.search.substring(1)}#Intent;scheme=upi;package=${apps[0].package};end`;
+    // Show immediate feedback
+    setPaymentFeedback('Attempting to open UPI app...', 'info');
+    
+    // Strategy: Try multiple methods with delays to see which one works
+    let attemptCount = 0;
+    const maxAttempts = 3;
+    
+    function tryMethod(methodNum) {
+        attemptCount++;
         
         try {
-            window.location.href = intentUrl;
+            if (isAndroid) {
+                // Android: Try multiple approaches
+                if (methodNum === 1) {
+                    // Method 1: Direct UPI link (works in some browsers)
+                    window.location.href = upiLink;
+                } else if (methodNum === 2) {
+                    // Method 2: Open in new window (avoids some browser blocks)
+                    window.open(upiLink, '_blank');
+                } else if (methodNum === 3) {
+                    // Method 3: Create invisible link and click it
+                    const link = document.createElement('a');
+                    link.href = upiLink;
+                    link.style.display = 'none';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                }
+            } else if (isIOS) {
+                // iOS: Standard UPI link
+                window.location.href = upiLink;
+            } else {
+                // Desktop/Other: Just show message
+                setPaymentFeedback('UPI deep links work best on mobile. Please scan the QR code instead', 'warning');
+                return;
+            }
+            
+            // Check if app opened after a delay
             setTimeout(() => {
-                // Fallback to regular UPI link if intent didn't work
-                setPaymentFeedback('If app didn\'t open, try scanning the QR code or use a different browser', 'warning');
-            }, 2000);
+                // If we're still on the page, the app probably didn't open
+                if (document.hasFocus() && attemptCount < maxAttempts) {
+                    tryMethod(attemptCount + 1);
+                } else if (attemptCount >= maxAttempts) {
+                    setPaymentFeedback('UPI app couldn\'t be opened automatically. Please use one of these options: 1) Scan the QR code, 2) Copy the UPI ID and paste in your app', 'warning');
+                }
+            }, 1500);
+            
         } catch (e) {
-            setPaymentFeedback('Unable to open UPI app. Please scan the QR code above', 'warning');
-        }
-    } else {
-        // iOS or other - use standard UPI link
-        try {
-            window.location.href = upiLink;
-            setTimeout(() => {
-                setPaymentFeedback('If UPI app didn\'t open, please scan the QR code above', 'warning');
-            }, 1000);
-        } catch (e) {
-            setPaymentFeedback('Unable to open UPI app. Please scan the QR code above', 'warning');
+            if (attemptCount < maxAttempts) {
+                setTimeout(() => tryMethod(attemptCount + 1), 500);
+            } else {
+                setPaymentFeedback('Please scan the QR code or copy the UPI ID to complete payment', 'warning');
+            }
         }
     }
+    
+    // Start with method 1
+    tryMethod(1);
 }
 
 function copyUpiId(upiId) {
